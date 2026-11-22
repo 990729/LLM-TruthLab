@@ -1,0 +1,2526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LLM-TruthLab v11.0 — 零信任大模型 API 指纹鉴伪实验室</title>
+<style>
+  :root {
+    --bg: #08080a;
+    --bg-rail: #0b0b0e;
+    --bg-card: #101014;
+    --bg-surface: #16161b;
+    --bg-hover: #1d1d24;
+    --border: rgba(255, 255, 255, 0.075);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text: #f4f4f5;
+    --text-2: #a1a1aa;
+    --text-3: #6b6b76;
+    --ivory: #f4f4f5;
+    --ivory-text: #09090b;
+    --emerald: #10b981;
+    --emerald-bg: rgba(16, 185, 129, 0.10);
+    --amber: #f59e0b;
+    --amber-bg: rgba(245, 158, 11, 0.10);
+    --crimson: #f43f5e;
+    --crimson-bg: rgba(244, 63, 94, 0.10);
+    --indigo: #818cf8;
+    --indigo-bg: rgba(129, 140, 248, 0.10);
+    --radius-lg: 14px;
+    --radius-md: 10px;
+    --radius-sm: 7px;
+    --sans: "SF Pro Display", "Segoe UI Variable Display", "PingFang SC", "Microsoft YaHei UI", system-ui, -apple-system, sans-serif;
+    --mono: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13.5px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  body {
+    background-image: radial-gradient(ellipse 70% 35% at 55% -12%, rgba(255,255,255,0.038), transparent 70%);
+    overflow: hidden;
+  }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+
+  /* App Shell */
+  .shell { display: flex; height: 100vh; width: 100vw; }
+
+  /* Left Rail */
+  .rail {
+    width: 224px;
+    flex-shrink: 0;
+    background: var(--bg-rail);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 14px 16px;
+    user-select: none;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 8px 18px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 14px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: linear-gradient(145deg, #27272e, #121216);
+    border: 1px solid var(--border-strong);
+    display: grid; place-items: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .brand-title { font-size: 13.5px; font-weight: 600; letter-spacing: 0.06em; color: var(--text); }
+  .brand-ver { font-size: 10px; font-family: var(--mono); color: var(--text-3); margin-top: 1px; }
+
+  .nav-group { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 11px;
+    border-radius: var(--radius-sm);
+    color: var(--text-2);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 13px; font-weight: 500;
+    transition: all 0.14s ease;
+    text-align: left; width: 100%;
+  }
+  .nav-item svg { width: 16px; height: 16px; opacity: 0.72; flex-shrink: 0; }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.035); }
+  .nav-item.active {
+    color: var(--text);
+    background: var(--bg-surface);
+    border-color: var(--border-strong);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .nav-item.active svg { opacity: 1; }
+  .nav-dot {
+    margin-left: auto; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--emerald); box-shadow: 0 0 8px var(--emerald);
+    display: none;
+  }
+  .nav-dot.on { display: block; }
+
+  .rail-footer {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .rail-util {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 10px; border-radius: var(--radius-sm);
+    background: transparent; border: none; color: var(--text-2);
+    font-size: 12px; cursor: pointer; text-align: left; width: 100%;
+    transition: color 0.14s, background 0.14s;
+  }
+  .rail-util:hover { color: var(--text); background: rgba(255,255,255,0.035); }
+  .rail-util svg { width: 14px; height: 14px; opacity: 0.7; }
+  .kbd-hint {
+    margin-top: 8px; padding: 6px 10px;
+    font-size: 11px; color: var(--text-3);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  kbd {
+    font-family: var(--mono); font-size: 10px;
+    padding: 2px 5px; border-radius: 4px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    color: var(--text-2);
+  }
+
+  /* Main Area */
+  .main {
+    flex: 1; display: flex; flex-direction: column;
+    overflow: hidden; min-width: 0;
+  }
+  .topbar {
+    height: 54px; flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(8, 8, 10, 0.72);
+    backdrop-filter: blur(12px);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .page-title { font-size: 14.5px; font-weight: 600; letter-spacing: -0.015em; }
+  .page-sub { font-size: 12px; color: var(--text-3); }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+
+  .content {
+    flex: 1; overflow-y: auto;
+    padding: 28px 36px 64px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  .workspace { display: none; animation: fadeIn 0.18s ease; }
+  .workspace.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Cards & Surfaces */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px;
+    margin-bottom: 18px;
+  }
+  .card-tight { padding: 16px 20px; }
+  .card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; gap: 12px;
+  }
+  .card-title { font-size: 13.5px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .card-desc { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+  /* Inputs */
+  .field-grid { display: grid; gap: 12px; }
+  .grid-3 { grid-template-columns: 2.1fr 1.6fr 1.45fr; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .field label {
+    font-size: 11.5px; font-weight: 500; color: var(--text-2);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .input-wrap { position: relative; display: flex; align-items: center; }
+  input[type="text"], input[type="password"], input[type="number"], select, textarea {
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 9px 11px;
+    font-size: 13px;
+    font-family: var(--sans);
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input.mono, textarea.mono { font-family: var(--mono); font-size: 12.2px; }
+  input:focus, select:focus, textarea:focus {
+    border-color: rgba(255,255,255,0.32);
+    background: #191920;
+  }
+  input::placeholder, textarea::placeholder { color: var(--text-3); }
+  select option { background: #16161b; color: var(--text); }
+
+  .inline-btn {
+    position: absolute; right: 5px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    font-size: 11px; padding: 3px 8px;
+    border-radius: 5px; cursor: pointer;
+    transition: all 0.14s;
+  }
+  .inline-btn:hover { color: var(--text); background: rgba(255,255,255,0.12); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 8px 15px; border-radius: var(--radius-sm);
+    font-size: 12.5px; font-weight: 500;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-surface); color: var(--text);
+    cursor: pointer; transition: all 0.14s ease;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--bg-hover); border-color: rgba(255,255,255,0.22); }
+  .btn:disabled { opacity: 0.42; cursor: not-allowed; }
+  .btn-primary {
+    background: var(--ivory); color: var(--ivory-text);
+    border-color: transparent; font-weight: 600;
+    padding: 9px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.45);
+  }
+  .btn-primary:hover { background: #ffffff; transform: translateY(-0.5px); }
+  .btn-danger { color: var(--crimson); border-color: rgba(244,63,94,0.32); background: var(--crimson-bg); }
+  .btn-danger:hover { background: rgba(244,63,94,0.18); }
+  .btn-emerald { color: var(--emerald); border-color: rgba(16,185,129,0.32); background: var(--emerald-bg); }
+  .btn-emerald:hover { background: rgba(16,185,129,0.18); }
+  .btn-sm { padding: 5px 10px; font-size: 11.8px; }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--text-2); }
+  .btn-ghost:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+  /* Segmented Presets & Controls Row */
+  .action-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+    margin-top: 16px; padding-top: 15px;
+    border-top: 1px solid var(--border);
+  }
+  .seg-group {
+    display: inline-flex; padding: 3px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; gap: 2px;
+  }
+  .seg-btn {
+    padding: 5px 11px; border-radius: 6px; border: none;
+    background: transparent; color: var(--text-2);
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    transition: all 0.14s;
+  }
+  .seg-btn:hover { color: var(--text); }
+  .seg-btn.active {
+    background: rgba(255,255,255,0.10); color: var(--text);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .quick-toggles { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .pill-check {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-2); cursor: pointer; user-select: none;
+  }
+  .pill-check input { accent-color: var(--ivory); width: 13px; height: 13px; cursor: pointer; }
+  .pill-check:hover { color: var(--text); }
+
+  .budget-inline {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-2);
+    background: var(--bg-surface); border: 1px solid var(--border);
+    padding: 3px 8px; border-radius: 7px;
+  }
+  .budget-inline input {
+    width: 56px; padding: 2px 5px; font-size: 12px;
+    background: transparent; border: none; text-align: right;
+    font-family: var(--mono); color: var(--text);
+  }
+  .budget-inline input:focus { background: transparent; }
+
+  /* Progressive Disclosure Drawer */
+  details.drawer {
+    margin-top: 14px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+  details.drawer summary {
+    cursor: pointer; list-style: none;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; color: var(--text-3);
+    user-select: none; transition: color 0.14s;
+  }
+  details.drawer summary::-webkit-details-marker { display: none; }
+  details.drawer summary:hover { color: var(--text-2); }
+  details.drawer[open] summary { color: var(--text-2); margin-bottom: 14px; }
+  .drawer-body { display: flex; flex-direction: column; gap: 14px; }
+  .probe-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    gap: 8px 12px;
+    background: rgba(255,255,255,0.015);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+  }
+
+  /* Progress Bar */
+  .progress-card { display: none; padding: 16px 22px; }
+  .progress-card.show { display: block; }
+  .prog-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12.5px; }
+  .prog-track { width: 100%; height: 3px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
+  .prog-fill { height: 100%; width: 0%; background: var(--ivory); transition: width 0.25s ease; }
+  .log-box {
+    margin-top: 12px; max-height: 120px; overflow-y: auto;
+    font-family: var(--mono); font-size: 11.2px; color: var(--text-3);
+    background: var(--bg-rail); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 8px 10px;
+  }
+
+  /* Empty Hero */
+  .empty-hero {
+    text-align: center;
+    padding: 58px 28px 54px;
+    border: 1px dashed rgba(255,255,255,0.10);
+    border-radius: var(--radius-lg);
+    background: rgba(255,255,255,0.012);
+  }
+  .empty-hero h2 {
+    font-size: 20px; font-weight: 600; letter-spacing: -0.025em;
+    color: var(--text); margin-bottom: 8px;
+  }
+  .empty-hero p {
+    font-size: 13px; color: var(--text-2); max-width: 520px;
+    margin: 0 auto 22px; line-height: 1.65;
+  }
+  .hero-pillars {
+    display: flex; justify-content: center; gap: 28px; flex-wrap: wrap;
+    margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text-3);
+  }
+  .hero-pillars span strong { color: var(--text-2); font-weight: 500; }
+
+  /* Verdict Hero */
+  .verdict-hero {
+    display: grid; grid-template-columns: 1fr auto; gap: 24px;
+    align-items: center;
+    padding: 26px 28px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    margin-bottom: 14px;
+  }
+  .verdict-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 4px 10px; border-radius: 99px;
+    font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em;
+    border: 1px solid currentColor; margin-bottom: 10px;
+  }
+  .verdict-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .verdict-h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.025em; margin-bottom: 6px; }
+  .verdict-sub { font-size: 13px; color: var(--text-2); max-width: 680px; }
+  .meta-strip {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+  }
+  .meta-chip {
+    font-size: 11.5px; font-family: var(--mono); color: var(--text-2);
+    background: var(--bg-surface); border: 1px solid var(--border);
+    padding: 3px 9px; border-radius: 6px;
+  }
+
+  .score-cluster { display: flex; gap: 16px; }
+  .score-box {
+    min-width: 114px; text-align: center;
+    padding: 14px 16px; border-radius: var(--radius-md);
+    background: var(--bg-surface); border: 1px solid var(--border);
+  }
+  .score-lbl { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
+  .score-val {
+    font-size: 32px; font-weight: 650; font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em; line-height: 1.15; margin: 4px 0 2px;
+  }
+  .score-sub { font-size: 11px; color: var(--text-2); }
+
+  /* Utility Ribbon (Cost + Markup Calc + Export) */
+  .utility-ribbon {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+    padding: 12px 18px; margin-bottom: 16px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .cost-line { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12.2px; color: var(--text-2); }
+  .cost-line strong { color: var(--text); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .markup-box {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 8px; border-radius: 6px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    font-size: 11.8px;
+  }
+  .markup-box input {
+    width: 62px; padding: 2px 5px; font-size: 11.8px;
+    font-family: var(--mono); border: none; background: transparent; text-align: right;
+  }
+  .markup-badge { font-family: var(--mono); font-weight: 600; font-size: 11.5px; }
+
+  /* Report Sub-Tabs */
+  .subtabs {
+    display: flex; gap: 4px; border-bottom: 1px solid var(--border);
+    margin-bottom: 18px;
+  }
+  .subtab {
+    padding: 9px 16px; background: transparent; border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-2); font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.14s;
+  }
+  .subtab:hover { color: var(--text); }
+  .subtab.active { color: var(--text); border-bottom-color: var(--ivory); }
+  .subpanel { display: none; }
+  .subpanel.active { display: block; animation: fadeIn 0.14s ease; }
+
+  /* Evidence Rows */
+  .ev-list { display: flex; flex-direction: column; gap: 8px; }
+  .ev-item {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 13px 16px;
+    transition: border-color 0.14s;
+  }
+  .ev-item:hover { border-color: var(--border-strong); }
+  .ev-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .pill {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    border-radius: 99px; font-size: 10.8px; font-weight: 600;
+    font-family: var(--mono); border: 1px solid transparent;
+  }
+  .pill-PASS { color: var(--emerald); background: var(--emerald-bg); border-color: rgba(16,185,129,0.28); }
+  .pill-WARN { color: var(--amber); background: var(--amber-bg); border-color: rgba(245,158,11,0.28); }
+  .pill-FAIL { color: var(--crimson); background: var(--crimson-bg); border-color: rgba(244,63,94,0.28); }
+  .pill-INFO { color: var(--indigo); background: var(--indigo-bg); border-color: rgba(129,140,248,0.25); }
+  .pill-SKIP { color: var(--text-3); background: rgba(255,255,255,0.04); }
+  .layer-chip { font-size: 10.5px; font-family: var(--mono); color: var(--text-3); }
+  .ev-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .ev-impact { margin-left: auto; font-family: var(--mono); font-size: 11.5px; color: var(--text-3); }
+  .ev-sum { font-size: 12.6px; color: var(--text-2); margin-top: 6px; line-height: 1.55; }
+  .ev-raw { margin-top: 8px; }
+  .ev-raw summary { font-size: 11.5px; color: var(--text-3); cursor: pointer; }
+  .ev-raw pre {
+    margin-top: 6px; padding: 10px 12px; border-radius: var(--radius-sm);
+    background: var(--bg-rail); border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 11.2px; color: var(--text-2);
+    overflow-x: auto; max-height: 220px;
+  }
+
+  /* Bars & Tables */
+  .bar-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; font-size: 12.5px; }
+  .bar-lbl { width: 170px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; background: var(--ivory); }
+  .bar-num { width: 54px; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text); }
+
+  table.clean-tbl { width: 100%; border-collapse: collapse; font-size: 12.4px; }
+  table.clean-tbl th {
+    text-align: left; padding: 9px 10px; font-size: 11px; font-weight: 600;
+    color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+  }
+  table.clean-tbl td {
+    padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,0.045);
+    color: var(--text-2); font-variant-numeric: tabular-nums;
+  }
+  table.clean-tbl tr:hover td { background: rgba(255,255,255,0.018); }
+
+  /* KPI Mini Strip */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .kpi-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 14px 16px;
+  }
+  .kpi-card .k-lbl { font-size: 11px; color: var(--text-3); }
+  .kpi-card .k-val { font-size: 22px; font-weight: 600; font-family: var(--mono); font-variant-numeric: tabular-nums; margin-top: 4px; color: var(--text); }
+  .kpi-card .k-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  /* Proxy Banner */
+  .proxy-endpoint-box {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding: 14px 18px; border-radius: var(--radius-md);
+    background: var(--emerald-bg); border: 1px solid rgba(16,185,129,0.28);
+    margin-bottom: 16px;
+  }
+  .proxy-url { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--emerald); }
+
+  /* Lists */
+  .clean-ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .clean-ul li {
+    font-size: 12.6px; color: var(--text-2);
+    padding: 8px 12px; border-radius: var(--radius-sm);
+    background: var(--bg-surface); border: 1px solid var(--border);
+  }
+  .clean-ul.warn li { border-color: rgba(244,63,94,0.26); background: rgba(244,63,94,0.06); color: #fda4af; }
+  .clean-ul.ok li { border-color: rgba(16,185,129,0.26); background: rgba(16,185,129,0.06); color: #6ee7b7; }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 90;
+    background: rgba(0, 0, 0, 0.72); backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-panel {
+    width: 100%; max-width: 780px; max-height: 84vh; overflow-y: auto;
+    background: var(--bg-card); border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg); padding: 24px 28px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.65);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; right: 24px; bottom: 22px; z-index: 120;
+    background: #1c1c22; color: var(--text);
+    border: 1px solid var(--border-strong);
+    padding: 10px 16px; border-radius: 9px;
+    font-size: 12.5px; box-shadow: 0 10px 32px rgba(0,0,0,0.55);
+    opacity: 0; transform: translateY(8px); pointer-events: none;
+    transition: all 0.2s ease;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* Bookmark Pills */
+  .bm-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .bm-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 99px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    font-size: 11.5px; color: var(--text-2); cursor: pointer;
+  }
+  .bm-chip:hover { border-color: var(--border-strong); color: var(--text); }
+  .bm-del { opacity: 0.5; margin-left: 2px; font-weight: 700; }
+  .bm-del:hover { opacity: 1; color: var(--crimson); }
+
+  @media (max-width: 1080px) {
+    .rail { width: 176px; padding: 14px 10px; }
+    .content { padding: 20px 20px 56px; }
+    .topbar { padding: 0 20px; }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+    .grid-4, .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .verdict-hero { grid-template-columns: 1fr; }
+    .score-cluster { flex-wrap: wrap; }
+  }
+  @media (max-width: 760px) {
+    body { overflow: auto; }
+    .shell { flex-direction: column; height: auto; min-height: 100vh; }
+    .rail { width: 100%; flex-direction: row; align-items: center; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 10px 12px; gap: 6px; }
+    .brand { border-bottom: none; margin-bottom: 0; padding: 0 10px 0 2px; }
+    .nav-group { flex-direction: row; flex: unset; gap: 4px; }
+    .nav-item { width: auto; padding: 6px 10px; font-size: 12px; }
+    .rail-footer { display: none; }
+    .grid-3, .grid-2, .grid-4, .kpi-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <!-- Minimalist Left Navigation Rail -->
+  <aside class="rail">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f4f4f5" stroke-width="1.8">
+          <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+          <line x1="12" y1="22" x2="12" y2="12"/>
+          <line x1="22" y1="8.5" x2="12" y2="12"/>
+          <line x1="2" y1="8.5" x2="12" y2="12"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">TRUTHLAB</div>
+        <div class="brand-ver">LLM-TruthLab v11.0</div>
+      </div>
+    </div>
+
+    <nav class="nav-group">
+      <button class="nav-item active" data-view="viewAudit" onclick="switchView('viewAudit')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+        <span>一键查真假</span>
+      </button>
+      <button class="nav-item" data-view="viewArena" onclick="switchView('viewArena')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/><path d="M21 16v5h-5"/><path d="M3 8V3h5"/></svg>
+        <span>双端抓套娃</span>
+      </button>
+      <button class="nav-item" data-view="viewBatch" onclick="switchView('viewBatch')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span>多站红黑榜</span>
+      </button>
+      <button class="nav-item" data-view="viewProxy" onclick="switchView('viewProxy')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+        <span>本地防偷换</span>
+        <span class="nav-dot" id="proxyLiveDot"></span>
+      </button>
+      <button class="nav-item" data-view="viewMonitor" onclick="switchView('viewMonitor')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>定时盯盘</span>
+        <span class="nav-dot" id="monLiveDot"></span>
+      </button>
+      <button class="nav-item" data-view="viewHistory" onclick="switchView('viewHistory')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+        <span>历史与基线</span>
+      </button>
+    </nav>
+
+    <div class="rail-footer">
+      <button class="rail-util" id="runDemoBtn" onclick="runDemoSandbox()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span>零消耗演练沙箱</span>
+      </button>
+      <button class="rail-util" id="openGuideBtn" onclick="toggleGuide(true)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>鉴假速查手册</span>
+      </button>
+      <div class="kbd-hint">
+        <span>快捷启动检测</span>
+        <kbd>Ctrl+Enter</kbd>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Workspace -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="page-title" id="topbarTitle">一键查真假</span>
+        <span class="page-sub" id="topbarSub">查中转站有没有掺水降智 · 10 秒看懂大白话报告</span>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-sm btn-ghost" onclick="runDemoSandbox()">零消耗演练</button>
+        <button class="btn btn-sm" onclick="toggleGuide(true)">鉴假手册</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="container">
+
+        <!-- ============================================================
+             WORKSPACE 1: SINGLE AUDIT STUDIO
+             ============================================================ -->
+        <section id="viewAudit" class="workspace active">
+          <div class="card">
+            <div class="field-grid grid-3">
+              <div class="field">
+                <label>API 地址 (Base URL)</label>
+                <input id="baseUrl" class="mono" type="text" placeholder="https://api.relay.com/v1" />
+              </div>
+              <div class="field">
+                <label>API Key（仅驻留内存，绝不落盘）</label>
+                <div class="input-wrap">
+                  <input id="apiKey" class="mono" type="password" placeholder="sk-..." style="padding-right:52px" />
+                  <button class="inline-btn" type="button" onclick="toggleKeyVis('apiKey', this)">显示</button>
+                </div>
+              </div>
+              <div class="field">
+                <label>请求模型</label>
+                <div class="input-wrap">
+                  <input id="modelName" class="mono" type="text" placeholder="claude-opus-5-5 / gpt-6.2-astra / gemini-4-neon" list="modelSuggestions" style="padding-right:52px" />
+                  <datalist id="modelSuggestions">
+                    <option value="claude-fable-5-2"></option>
+                    <option value="claude-opus-5-5"></option>
+                    <option value="claude-sonnet-5-5"></option>
+                    <option value="claude-haiku-5-5"></option>
+                    <option value="gpt-6.2-astra"></option>
+                    <option value="gpt-6.2-sol"></option>
+                    <option value="gpt-6.1-terra"></option>
+                    <option value="gpt-6-luna"></option>
+                    <option value="gemini-4-neon"></option>
+                    <option value="gemini-4-argon"></option>
+                    <option value="gemini-4-hydrogen"></option>
+                    <option value="gemini-3.8-flash"></option>
+                    <option value="deepseek-v4"></option>
+                    <option value="deepseek-v4.1-flash"></option>
+                    <option value="qwen3.8"></option>
+                    <option value="glm-5.3"></option>
+                  </datalist>
+                  <button class="inline-btn" type="button" onclick="fetchModels()">拉取</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-bar">
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <div class="seg-group" id="presetBar">
+                  <button class="seg-btn" data-preset="flash" onclick="applyPreset('flash', this)">闪电打假</button>
+                  <button class="seg-btn active" data-preset="standard" onclick="applyPreset('standard', this)">标准全检 (31题智商)</button>
+                  <button class="seg-btn" data-preset="iq_only" onclick="applyPreset('iq_only', this)">纯测智商 (34题)</button>
+                  <button class="seg-btn" data-preset="agent" onclick="applyPreset('agent', this)">Agent 专项</button>
+                  <button class="seg-btn" data-preset="extreme" onclick="applyPreset('extreme', this)">极限压测</button>
+                </div>
+                <div class="quick-toggles">
+                  <label class="pill-check" title="默认开启：体检结束时用当前 Key 自动把晦涩的技术证据翻译成 10 秒看懂的大白话总结（仅耗几百 Token）">
+                    <input type="checkbox" id="chkPlainSummary" checked />
+                    <span>AI 大白话解读</span>
+                  </label>
+                  <label class="pill-check" title="随机伪装官方 SDK 请求头并动态改写探针句式，防中转站规则识别绕过">
+                    <input type="checkbox" id="chkStealth" />
+                    <span>隐身防反检</span>
+                  </label>
+                  <div class="budget-inline" title="单次官方参考价估算达到上限时自动熔断停止后续探针；0 表示不限">
+                    <span>预算熔断 ¥</span>
+                    <input type="number" id="budgetCap" min="0" step="0.5" value="0" placeholder="0" />
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-danger btn-sm" id="cancelAuditBtn" style="display:none" onclick="cancelAudit()">停止</button>
+                <button class="btn btn-primary" id="startAuditBtn" onclick="startAudit()">开始零信任检测</button>
+              </div>
+            </div>
+
+            <!-- Progressive Disclosure Advanced Settings -->
+            <details class="drawer" id="advDrawer">
+              <summary>
+                <span>高级探测选项 · 协议 / 探针开关 / 代理 / 书签</span>
+                <span style="font-family:var(--mono);font-size:11px;">展开 ▾</span>
+              </summary>
+              <div class="drawer-body">
+                <div class="field-grid grid-4">
+                  <div class="field">
+                    <label>协议适配</label>
+                    <select id="protocolSel">
+                      <option value="auto">自动识别 (推荐)</option>
+                      <option value="openai_chat">OpenAI Chat (/v1/chat/completions)</option>
+                      <option value="anthropic">Anthropic 原生 (/v1/messages)</option>
+                      <option value="openai_responses">OpenAI Responses (/v1/responses)</option>
+                      <option value="gemini">Gemini 原生 (generateContent)</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>采样强度</label>
+                    <select id="modeSel">
+                      <option value="quick">快速 (省 Token)</option>
+                      <option value="standard" selected>标准 (推荐)</option>
+                      <option value="deep">深度 (高精度)</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>对比官方基线</label>
+                    <select id="baselineSel"><option value="">自动匹配全部本地基线</option></select>
+                  </div>
+                  <div class="field">
+                    <label>固定智商 Seed (选填)</label>
+                    <input id="iqSeed" class="mono" type="number" placeholder="留空随机防污染" />
+                  </div>
+                </div>
+
+                <div class="probe-grid">
+                  <label class="pill-check"><input type="checkbox" id="chkProtocol" checked /> L1 密码学验签与协议</label>
+                  <label class="pill-check"><input type="checkbox" id="chkTokenizer" checked /> 词表边界与单Token截断</label>
+                  <label class="pill-check"><input type="checkbox" id="chkFingerprint" checked /> 单Token分布与JSD</label>
+                  <label class="pill-check"><input type="checkbox" id="chkIQ" checked /> 10维工程动态智商</label>
+                  <label class="pill-check"><input type="checkbox" id="chkV11" checked /> 反逆向池/LogitBias/多轮</label>
+                  <label class="pill-check"><input type="checkbox" id="chkVision" checked /> 视觉防OCR+1024²微缩</label>
+                  <label class="pill-check"><input type="checkbox" id="chkPdf" checked /> 动态原生PDF验真</label>
+                  <label class="pill-check"><input type="checkbox" id="chkAgent" checked /> Agent并行工具与自愈</label>
+                  <label class="pill-check"><input type="checkbox" id="chkSmartRoute" checked /> 短/长文本智能路由陷阱</label>
+                  <label class="pill-check"><input type="checkbox" id="chkBilling" checked /> 输入计费倍率注水审计</label>
+                  <label class="pill-check"><input type="checkbox" id="chkQuant" checked /> 细粒度抗重度量化</label>
+                  <label class="pill-check"><input type="checkbox" id="chkConcurrency" checked /> 5路并发峰值混流</label>
+                  <label class="pill-check"><input type="checkbox" id="chkRegex" checked /> 正则改词洗白诱饵</label>
+                  <label class="pill-check"><input type="checkbox" id="chkCutoff" checked /> 知识截止时间线</label>
+                  <label class="pill-check"><input type="checkbox" id="chkLongCtx" checked /> 长文多跳寻针</label>
+                  <label class="pill-check"><input type="checkbox" id="chkOutputCap" /> 长输出上限防偷砍</label>
+                  <label class="pill-check"><input type="checkbox" id="chkCliff" /> 上下文断崖热力压测</label>
+                  <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);">
+                    <span>断崖上限</span>
+                    <select id="cliffMaxK" style="width:74px;padding:3px 6px;font-size:11.5px;">
+                      <option value="4">4K</option>
+                      <option value="16" selected>16K</option>
+                      <option value="32">32K</option>
+                      <option value="64">64K</option>
+                      <option value="128">128K</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="field-grid grid-4">
+                  <div class="field">
+                    <label>HTTP / SOCKS 代理</label>
+                    <input id="proxyUrl" class="mono" type="text" placeholder="http://127.0.0.1:7890" />
+                  </div>
+                  <div class="field">
+                    <label>单请求超时 (秒)</label>
+                    <input id="timeoutSec" class="mono" type="number" value="75" min="15" max="300" />
+                  </div>
+                  <div class="field">
+                    <label>并发线程</label>
+                    <input id="maxConc" class="mono" type="number" value="4" min="1" max="10" />
+                  </div>
+                  <div class="field" style="justify-content:flex-end;">
+                    <label class="pill-check" style="margin-bottom:8px;"><input type="checkbox" id="chkVerifySsl" checked /> 严格校验证书 (SSL)</label>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label>自定义扩展请求头 JSON (选填)</label>
+                  <input id="extraHeaders" class="mono" type="text" placeholder='{"X-Custom-Channel": "pro"}' />
+                </div>
+
+                <!-- Key-free Bookmarks -->
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--border);">
+                  <div class="bm-bar" id="bookmarkBar"><span style="font-size:11.5px;color:var(--text-3);">无 Key 安全书签：暂无</span></div>
+                  <button class="btn btn-sm" id="saveBookmarkBtn" type="button" onclick="saveBookmark()">+ 存当前站为无Key书签</button>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <!-- Progress Strip -->
+          <div class="card progress-card" id="auditProgressCard">
+            <div class="prog-top">
+              <span id="auditProgressText" style="color:var(--text);font-weight:500;">正在初始化零信任取证引擎...</span>
+              <span id="auditProgressPct" class="mono" style="color:var(--text-2);">0%</span>
+            </div>
+            <div class="prog-track"><div class="prog-fill" id="auditProgressFill"></div></div>
+            <div class="log-box" id="auditLogBox"></div>
+          </div>
+
+          <!-- Empty Hero -->
+          <div class="empty-hero" id="auditEmptyHero">
+            <h2>中转站有没有掺水、降智？一键测出真身</h2>
+            <p>填上你的中转网址、API Key 和模型名就能开测——自动查验是不是官方真货、有没有偷偷换成便宜模型、智商缩没缩水，测完直接用大白话告诉你能不能放心用。</p>
+            <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-primary" onclick="runDemoSandbox()">零花费先体验：模拟打假演示</button>
+              <button class="btn" onclick="switchView('viewProxy')">开启本地代理（边写代码边防偷换）</button>
+            </div>
+            <div class="hero-pillars">
+              <span><strong>查有没有掺假</strong> · 假签名 / 拆字假账单 / 改词洗白 / 逆向号池</span>
+              <span><strong>查智商降没降</strong> · 10 类防背题动态新题（写 SQL / 改代码 / 逻辑推理）</span>
+              <span><strong>10 秒看懂结论</strong> · 默认生成大白话总结 + 推算最可能真实模型</span>
+            </div>
+          </div>
+
+          <!-- Report Stage -->
+          <div id="auditReportStage" style="display:none;">
+            <div class="verdict-hero" id="verdictHero"></div>
+            <div class="card card-tight" id="plainSummaryCard" style="display:none;border-color:rgba(244,244,245,0.16);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));">
+              <div class="card-head" style="margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <div class="card-title" style="font-size:14px;">大白话体检结论（10 秒看懂）</div>
+                  <span class="meta-chip" id="plainSummarySource"></span>
+                </div>
+                <button class="btn btn-sm btn-ghost" onclick="copyPlainSummary()">复制大白话</button>
+              </div>
+              <div id="plainSummaryBody" style="white-space:pre-line;font-size:13.5px;line-height:1.78;color:var(--text);"></div>
+            </div>
+
+            <div class="utility-ribbon">
+              <div class="cost-line" id="costLine"></div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <label class="pill-check" title="导出 HTML / Markdown / PNG 战报时将自定义域名打码为 relay-masked.example">
+                  <input type="checkbox" id="chkAnonymize" />
+                  <span>域名打码</span>
+                </label>
+                <button class="btn btn-sm" id="exportPosterBtn" onclick="exportPosterPNG()">导出战报 PNG</button>
+                <button class="btn btn-sm" onclick="exportAudit('html')">离线 HTML</button>
+                <button class="btn btn-sm" id="copyMdBtn" onclick="copyAuditMarkdown()">复制 Markdown</button>
+                <button class="btn btn-sm btn-emerald" onclick="saveCurrentAsBaseline()">存为官方基线</button>
+              </div>
+            </div>
+
+            <div class="subtabs">
+              <button class="subtab active" data-sub="subOverview" onclick="switchReportTab('subOverview', this)">结论与真身推测</button>
+              <button class="subtab" data-sub="subEvidence" onclick="switchReportTab('subEvidence', this)">逐项检测明细</button>
+              <button class="subtab" data-sub="subTelemetry" onclick="switchReportTab('subTelemetry', this)">速度与指纹数据</button>
+              <button class="subtab" data-sub="subIQ" onclick="switchReportTab('subIQ', this)">智商做题成绩</button>
+            </div>
+
+            <div id="subOverview" class="subpanel active"></div>
+            <div id="subEvidence" class="subpanel"></div>
+            <div id="subTelemetry" class="subpanel"></div>
+            <div id="subIQ" class="subpanel"></div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             WORKSPACE 2: A/B DUAL-ENDPOINT ARENA
+             ============================================================ -->
+        <section id="viewArena" class="workspace">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">A / B 双端同台对决与别名套娃打假</div>
+                <div class="card-desc">强制共享同一动态智商 Seed，直接测量 A ↔ B 行为分布 JSD 散度与词表距离，专抓“同站高价 Opus 实际指向低价 Sonnet”套娃。</div>
+              </div>
+              <button class="btn btn-sm" onclick="cloneAToB()">同站复用 A 的地址/Key</button>
+            </div>
+            <div class="field-grid grid-2">
+              <div class="card card-tight" style="margin:0;background:var(--bg-surface);">
+                <div class="card-title" style="margin-bottom:10px;">端点 A（被测目标 / 高价旗舰）</div>
+                <div class="field-grid">
+                  <div class="field"><label>Base URL</label><input id="abUrlA" class="mono" type="text" placeholder="https://relay-a.com/v1" /></div>
+                  <div class="field"><label>API Key</label><input id="abKeyA" class="mono" type="password" placeholder="sk-..." /></div>
+                  <div class="field-grid grid-2">
+                    <div class="field"><label>模型 A</label><input id="abModelA" class="mono" type="text" placeholder="claude-opus-5-5 / gpt-6.2-astra" /></div>
+                    <div class="field"><label>协议</label><select id="abProtoA"><option value="auto">自动</option><option value="openai_chat">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Gemini</option></select></div>
+                  </div>
+                </div>
+              </div>
+              <div class="card card-tight" style="margin:0;background:var(--bg-surface);">
+                <div class="card-title" style="margin-bottom:10px;">端点 B（官方对照 / 同站廉价版）</div>
+                <div class="field-grid">
+                  <div class="field"><label>Base URL</label><input id="abUrlB" class="mono" type="text" placeholder="https://api.anthropic.com" /></div>
+                  <div class="field"><label>API Key</label><input id="abKeyB" class="mono" type="password" placeholder="sk-..." /></div>
+                  <div class="field-grid grid-2">
+                    <div class="field"><label>模型 B</label><input id="abModelB" class="mono" type="text" placeholder="claude-sonnet-5-5 / gpt-6-luna" /></div>
+                    <div class="field"><label>协议</label><select id="abProtoB"><option value="auto">自动</option><option value="openai_chat">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Gemini</option></select></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="action-bar">
+              <div class="quick-toggles">
+                <select id="abMode" style="width:120px;padding:6px 8px;font-size:12px;"><option value="quick">快速对决</option><option value="standard" selected>标准对决</option><option value="deep">深度对决</option></select>
+                <label class="pill-check"><input type="checkbox" id="abRunIQ" checked /> 同 Seed 智商 PK</label>
+                <label class="pill-check"><input type="checkbox" id="abRunProto" checked /> 含协议与词表校验</label>
+              </div>
+              <button class="btn btn-primary" id="startArenaBtn" onclick="startArena()">启动 A/B 对决</button>
+            </div>
+          </div>
+
+          <div class="card progress-card" id="arenaProgressCard">
+            <div class="prog-top"><span id="arenaProgressText">准备对决...</span><span id="arenaProgressPct" class="mono">0%</span></div>
+            <div class="prog-track"><div class="prog-fill" id="arenaProgressFill"></div></div>
+          </div>
+
+          <div id="arenaResultBox" style="display:none;"></div>
+        </section>
+
+        <!-- ============================================================
+             WORKSPACE 3: BATCH LEADERBOARD
+             ============================================================ -->
+        <section id="viewBatch" class="workspace">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">多站批量红黑榜与 N×N 同源相似度矩阵</div>
+                <div class="card-desc">横向并发实测 2–12 个中转渠道，一键揪出背后其实共用同一家上游的“换皮马甲站”。</div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-sm" id="batchPasteBtn" onclick="toggleBatchPaste()">批量文本导入</button>
+                <button class="btn btn-sm" onclick="addBatchRow()">+ 添加行</button>
+              </div>
+            </div>
+
+            <div id="batchPasteBox" style="display:none;margin-bottom:14px;padding:12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);">
+              <div style="font-size:12px;color:var(--text-2);margin-bottom:6px;">每行一个渠道，格式：<code>标签 | Base URL | API Key | 模型名</code>（支持竖线或逗号分隔）</div>
+              <textarea id="batchPasteText" class="mono" rows="4" placeholder="A站旗舰 | https://a.relay.com/v1 | sk-aaa | claude-opus-4-6&#10;B站平替 | https://b.relay.com/v1 | sk-bbb | claude-opus-4-6"></textarea>
+              <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+                <button class="btn btn-sm btn-ghost" onclick="toggleBatchPaste(false)">取消</button>
+                <button class="btn btn-sm btn-primary" onclick="applyBatchPaste()">解析填入表格</button>
+              </div>
+            </div>
+
+            <div style="overflow-x:auto;">
+              <table class="clean-tbl" id="batchInputTable">
+                <thead><tr><th style="width:120px">标签</th><th>Base URL</th><th>API Key</th><th style="width:170px">模型</th><th style="width:105px">协议</th><th style="width:44px"></th></tr></thead>
+                <tbody id="batchRowsBody"></tbody>
+              </table>
+            </div>
+
+            <div class="action-bar">
+              <div class="quick-toggles">
+                <select id="batchMode" style="width:120px;padding:6px 8px;font-size:12px;"><option value="quick" selected>快速横评</option><option value="standard">标准横评</option></select>
+                <label class="pill-check"><input type="checkbox" id="batchRunIQ" checked /> 含同题智商</label>
+                <label class="pill-check"><input type="checkbox" id="batchRunProto" checked /> 含协议验真</label>
+              </div>
+              <button class="btn btn-primary" id="startBatchBtn" onclick="startBatch()">开始批量横评</button>
+            </div>
+          </div>
+
+          <div class="card progress-card" id="batchProgressCard">
+            <div class="prog-top"><span id="batchProgressText">正在执行横评...</span><span id="batchProgressPct" class="mono">0%</span></div>
+            <div class="prog-track"><div class="prog-fill" id="batchProgressFill"></div></div>
+          </div>
+
+          <div id="batchResultBox" style="display:none;"></div>
+        </section>
+
+        <!-- ============================================================
+             WORKSPACE 4: LOCAL TRANSPARENT PASSIVE AUDIT PROXY (v11 NEW)
+             ============================================================ -->
+        <section id="viewProxy" class="workspace">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">本地透明代理 · 真实业务流量被动审计（零额外 Token 消耗）</div>
+                <div class="card-desc">将 Cursor / Claude Code / Cherry Studio 的 Base URL 指向本地代理，日常写代码时实时透传并监控模型偷换、机房切换、假流与真实花费。</div>
+              </div>
+              <span class="pill pill-INFO" id="proxyStatePill">未启动</span>
+            </div>
+
+            <div class="field-grid grid-3">
+              <div class="field">
+                <label>上游中转站 Base URL</label>
+                <input id="pxUpstream" class="mono" type="text" placeholder="https://api.your-relay.com" />
+              </div>
+              <div class="field">
+                <label>本地监听端口</label>
+                <input id="pxPort" class="mono" type="number" value="8899" min="1024" max="65535" />
+              </div>
+              <div class="field">
+                <label>上游出站代理 (选填)</label>
+                <input id="pxOutProxy" class="mono" type="text" placeholder="http://127.0.0.1:7890" />
+              </div>
+            </div>
+
+            <div class="action-bar">
+              <label class="pill-check"><input type="checkbox" id="pxVerifySsl" checked /> 校验上游 SSL 证书</label>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-sm" onclick="clearProxyLogs()">清空记录</button>
+                <button class="btn btn-danger btn-sm" id="stopProxyBtn" style="display:none" onclick="stopProxy()">停止代理</button>
+                <button class="btn btn-primary" id="startProxyBtn" onclick="startProxy()">启动透明代理</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="proxy-endpoint-box" id="proxyLiveBanner" style="display:none;">
+            <div>
+              <div style="font-size:11.5px;color:var(--text-2);margin-bottom:2px;">请在 Cursor / Claude Code / Cherry Studio 中将 Base URL 设为：</div>
+              <div class="proxy-url" id="proxyListenUrl">http://127.0.0.1:8899/v1</div>
+            </div>
+            <button class="btn btn-sm btn-emerald" onclick="copyProxyUrl()">复制地址</button>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="k-lbl">拦截业务请求</div><div class="k-val" id="pxKpiReqs">0</div><div class="k-sub" id="pxKpiErrs">0 错误</div></div>
+            <div class="kpi-card"><div class="k-lbl">官方折算累计花费</div><div class="k-val" id="pxKpiCny">¥0.000</div><div class="k-sub" id="pxKpiUsd">$0.0000</div></div>
+            <div class="kpi-card"><div class="k-lbl">累计 Token 吞吐</div><div class="k-val" id="pxKpiTok">0</div><div class="k-sub" id="pxKpiTokSub">In 0 / Out 0</div></div>
+            <div class="kpi-card"><div class="k-lbl">静默异常告警</div><div class="k-val" id="pxKpiAlerts">0</div><div class="k-sub">指纹 / 机房 / 模型跳变</div></div>
+          </div>
+
+          <div class="card" id="pxAlertCard" style="display:none;">
+            <div class="card-head"><div class="card-title" style="color:var(--crimson);">实时流量异常告警</div></div>
+            <ul class="clean-ul warn" id="pxAlertList"></ul>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">实时业务流量监控台</div>
+              <button class="btn btn-sm btn-ghost" onclick="refreshProxyStatus()">手动刷新</button>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="clean-tbl">
+                <thead><tr><th>时间</th><th>路径</th><th>请求 → 返回模型</th><th>状态</th><th>TTFT / 总耗时</th><th>TPS</th><th>Token</th><th>机房</th><th>参考价</th><th>操作</th></tr></thead>
+                <tbody id="pxRecordsBody"><tr><td colspan="10" style="text-align:center;color:var(--text-3);padding:24px;">启动透明代理后，业务客户端发出的请求将实时显示在此</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             WORKSPACE 5: CANARY MONITOR + WEBHOOK
+             ============================================================ -->
+        <section id="viewMonitor" class="workspace">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">金丝雀无人值守盯盘与 Webhook 告警</div>
+                <div class="card-desc">低频发送微探针，自动抓获“白班真官源、晚高峰偷换假模”、响应 ID 突变或延迟暴涨，并推送到飞书/钉钉/企微/Discord。</div>
+              </div>
+              <span class="pill pill-INFO" id="monStatePill">未运行</span>
+            </div>
+            <div class="field-grid grid-3">
+              <div class="field"><label>目标 Base URL</label><input id="monUrl" class="mono" type="text" placeholder="https://api.relay.com/v1" /></div>
+              <div class="field"><label>API Key</label><input id="monKey" class="mono" type="password" placeholder="sk-..." /></div>
+              <div class="field"><label>监控模型</label><input id="monModel" class="mono" type="text" placeholder="claude-sonnet-4-5" /></div>
+            </div>
+            <div class="field-grid grid-3" style="margin-top:12px;">
+              <div class="field">
+                <label>告警 Webhook URL（飞书 / 钉钉 / 企微 / Discord，选填）</label>
+                <div class="input-wrap">
+                  <input id="monWebhook" class="mono" type="text" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..." style="padding-right:64px" />
+                  <button class="inline-btn" type="button" onclick="testWebhook()">测试</button>
+                </div>
+              </div>
+              <div class="field">
+                <label>巡检间隔 (秒)</label>
+                <input id="monInterval" class="mono" type="number" value="180" min="15" max="3600" />
+              </div>
+              <div class="field">
+                <label>协议</label>
+                <select id="monProto"><option value="auto">自动</option><option value="openai_chat">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Gemini</option></select>
+              </div>
+            </div>
+            <div class="action-bar">
+              <div style="font-size:12px;color:var(--text-3);" id="monAnchorInfo">基准锚点：首轮成功后自动锁定</div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-sm" onclick="monitorTickNow()">立即抽检一次</button>
+                <button class="btn btn-danger btn-sm" id="stopMonBtn" style="display:none" onclick="stopMonitor()">停止盯盘</button>
+                <button class="btn btn-primary" id="startMonBtn" onclick="startMonitor()">启动持续盯盘</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="monAlertsCard" style="display:none;">
+            <div class="card-head"><div class="card-title" style="color:var(--crimson);">漂移与异常告警流</div></div>
+            <ul class="clean-ul warn" id="monAlertsList"></ul>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div class="card-title">巡检时间轴</div></div>
+            <div style="overflow-x:auto;">
+              <table class="clean-tbl">
+                <thead><tr><th>#</th><th>时间</th><th>状态</th><th>返回模型</th><th>ID 前缀</th><th>延迟 / TTFT</th><th>TPS</th><th>JSD 漂移</th><th>微智商</th></tr></thead>
+                <tbody id="monTicksBody"><tr><td colspan="9" style="text-align:center;color:var(--text-3);padding:24px;">暂无巡检记录</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             WORKSPACE 6: HISTORY VAULT, DIFF & BASELINES + ZIP BACKUP
+             ============================================================ -->
+        <section id="viewHistory" class="workspace">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">本地取证历史档案库与时间轴纵比</div>
+                <div class="card-desc">勾选任意 2 条记录一键对比可信度、智商与分布漂移，坐实中转站“上周真源、本周暗换”。</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-sm" id="compareHistoryBtn" onclick="compareSelectedHistory()">对比选中 2 条</button>
+                <button class="btn btn-sm" id="backupZipBtn" onclick="exportBackupZip()">导出全量 ZIP</button>
+                <button class="btn btn-sm" id="importZipBtn" onclick="document.getElementById('importZipFile').click()">导入 ZIP 还原</button>
+                <input type="file" id="importZipFile" accept=".zip" style="display:none" onchange="importBackupZip(this)" />
+              </div>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="clean-tbl">
+                <thead><tr><th style="width:32px">选</th><th>时间</th><th>模型</th><th>端点</th><th>结论</th><th>可信分</th><th>智商</th><th>操作</th></tr></thead>
+                <tbody id="historyBody"><tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:22px;">加载中...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card" id="historyDiffCard" style="display:none;"></div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">本地官方基线指纹库</div>
+                <div class="card-desc">用可信官源跑一次并「存为官方基线」，之后几分钱即可用 JSD 散度精准验真任何中转。</div>
+              </div>
+              <div>
+                <button class="btn btn-sm" onclick="document.getElementById('importBlFile').click()">导入基线 JSON</button>
+                <input type="file" id="importBlFile" accept=".json" style="display:none" onchange="importBaselineJson(this)" />
+              </div>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="clean-tbl">
+                <thead><tr><th>基线名称</th><th>模型</th><th>样本量</th><th>词表特征</th><th>创建时间</th><th>操作</th></tr></thead>
+                <tbody id="baselinesBody"><tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:20px;">暂无本地官方基线</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Forensic Field Guide Modal -->
+<div class="modal-backdrop" id="guideModal" onclick="if(event.target===this) toggleGuide(false)">
+  <div class="modal-panel">
+    <div class="card-head">
+      <div>
+        <div class="card-title" style="font-size:16px;">LLM-TruthLab v11.0 零信任鉴假速查手册</div>
+        <div class="card-desc">只信密码学、物理边界与统计散度，绝不信 response.model 自报字段</div>
+      </div>
+      <button class="btn btn-sm btn-ghost" onclick="toggleGuide(false)">关闭 ✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;font-size:12.6px;color:var(--text-2);">
+      <div>
+        <div class="card-title" style="margin-bottom:6px;">一、五大零误报硬铁证（触发即基本坐实）</div>
+        <ul class="clean-ul">
+          <li><strong>Claude Thinking 1 字节篡改放行</strong>：真 Anthropic 服务端必校验加密 signature 并拒 HTTP 400；放行或正文漏 <code>&lt;think&gt;</code> = 100% 伪造/套壳。</li>
+          <li><strong>词表假账单穿帮 (<code>max_tokens=1</code>)</strong>：输入账单假装 3 位数字合并 (+10 tok)，实际输出却只能吐 1 位数字 = 网关拿 tiktoken 伪造账单、背后跑单数字切分模型。</li>
+          <li><strong>正则改词洗白诱饵</strong>：把 <code>DeepSeek / Qwen</code> 原样字符串强行替换成 <code>Claude</code> = 100% 黑产正则洗白网关。</li>
+          <li><strong>Logit-Bias Token ID 精准狙击</strong>：GPT-4o/4.1 静默忽略 <code>logit_bias: {"22": -100}</code> 仍输出 <code>7</code> = 网页逆向号池或网关清洗参数。</li>
+          <li><strong>Prompt Cache 物理粘性失效</strong>：连续两次完全相同 1.35K 前缀却 <code>cache_read=0</code> 或虚报缓存但 TTFT 不降反升 = 多账号轮询网页逆向号池。</li>
+        </ul>
+      </div>
+      <div>
+        <div class="card-title" style="margin-bottom:6px;">二、Tokenizer 词表物理边界速查表</div>
+        <table class="clean-tbl">
+          <thead><tr><th>模型家族</th><th>30位连续数字</th><th>32个中文汉字</th><th>10位数字 max_tokens=1</th></tr></thead>
+          <tbody>
+            <tr><td>OpenAI (o200k / cl100k)</td><td>~10 tokens (3位合并)</td><td>~22–38 tokens</td><td>输出 3 位 (如 <code>123</code>)</td></tr>
+            <tr><td>Claude 3.5 / 4.x</td><td>~10–13 tokens</td><td>~28–42 tokens</td><td>输出 1–3 位</td></tr>
+            <tr><td>DeepSeek / Qwen / Llama3</td><td>30 tokens (单数字切分)</td><td>~18–26 tokens (高密中文)</td><td>仅输出 1 位 (<code>1</code>)</td></tr>
+            <tr><td>Gemini (SentencePiece)</td><td>30 tokens (单数字切分)</td><td>~24–32 tokens</td><td>仅输出 1 位 (<code>1</code>)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div class="card-title" style="margin-bottom:6px;">三、单 Token JSD 散度判定参考</div>
+        <table class="clean-tbl">
+          <thead><tr><th>JSD 区间 (base-2)</th><th>统计含义</th><th>实战解读</th></tr></thead>
+          <tbody>
+            <tr><td class="mono" style="color:var(--emerald)">0.00 – 0.16</td><td>高度同源</td><td>与官方基线一致；若在 A/B 测不同模型名时出现，说明抓获<strong>别名套娃</strong>！</td></tr>
+            <tr><td class="mono" style="color:var(--amber)">0.17 – 0.35</td><td>存在偏差/噪声</td><td>可能受小样本波动、轻微量化或系统提示词影响，建议切换深度模式复核。</td></tr>
+            <tr><td class="mono" style="color:var(--crimson)">&gt; 0.35</td><td>显著异源</td><td>极高概率底层模型已被替换、重度量化或混流！</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toastBox"></div>
+
+<script>
+const APP_TOKEN = new URLSearchParams(window.location.search).get("token") || "";
+let currentJobId = null;
+let currentReport = null;
+let currentArenaJobId = null;
+let currentArena = null;
+let currentBatchJobId = null;
+let currentBatch = null;
+let currentAuditES = null;
+let activeView = "viewAudit";
+let proxyPollTimer = null;
+let monPollTimer = null;
+let cachedBaselines = [];
+
+const VIEW_META = {
+  viewAudit: ["一键查真假", "查中转站有没有掺水降智 · 10 秒看懂大白话报告"],
+  viewArena: ["双端对比抓套娃", "拿高价模型和同站便宜模型同台 PK，一眼抓出改名套娃"],
+  viewBatch: ["多站红黑榜", "一次对比 2–12 个中转渠道，揪出共用同一上游的换皮站"],
+  viewProxy: ["本地透明代理", "零额外花费 · 日常写代码时后台默默防偷换模型、算真实花费"],
+  viewMonitor: ["定时盯盘告警", "无人值守防白天真货晚上掺水 · 支持飞书/钉钉/企微推送"],
+  viewHistory: ["历史记录与基线", "前后两次体检对比 · 保存官方指纹 · 一键备份导出/导入"],
+};
+
+function apiUrl(path) {
+  const sep = path.includes("?") ? "&" : "?";
+  return APP_TOKEN ? `${path}${sep}token=${encodeURIComponent(APP_TOKEN)}` : path;
+}
+function apiHeaders(extra = {}) {
+  const h = { "Content-Type": "application/json", ...extra };
+  if (APP_TOKEN) h["X-App-Token"] = APP_TOKEN;
+  return h;
+}
+async function readJsonSafe(r) {
+  const txt = await r.text();
+  try { return JSON.parse(txt); }
+  catch {
+    return { error: `本地服务返回非 JSON 响应 (HTTP ${r.status}): ${txt.slice(0, 80)}` };
+  }
+}
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function toast(msg) {
+  const box = document.getElementById("toastBox");
+  box.textContent = msg;
+  box.classList.add("show");
+  clearTimeout(window._toastTid);
+  window._toastTid = setTimeout(() => box.classList.remove("show"), 2600);
+}
+function toggleKeyVis(id, btn) {
+  const inp = document.getElementById(id);
+  if (inp.type === "password") { inp.type = "text"; btn.textContent = "隐藏"; }
+  else { inp.type = "password"; btn.textContent = "显示"; }
+}
+function toggleGuide(open) {
+  document.getElementById("guideModal").classList.toggle("open", !!open);
+}
+
+function switchView(vid) {
+  activeView = vid;
+  document.querySelectorAll(".workspace").forEach(el => el.classList.toggle("active", el.id === vid));
+  document.querySelectorAll(".nav-item").forEach(el => el.classList.toggle("active", el.dataset.view === vid));
+  const m = VIEW_META[vid] || ["LLM-TruthLab", ""];
+  document.getElementById("topbarTitle").textContent = m[0];
+  document.getElementById("topbarSub").textContent = m[1];
+  if (vid === "viewHistory") { loadHistory(); loadBaselines(); }
+  if (vid === "viewProxy") { refreshProxyStatus(); }
+  if (vid === "viewMonitor") { refreshMonitorStatus(); }
+}
+
+function switchReportTab(subId, btn) {
+  document.querySelectorAll(".subpanel").forEach(p => p.classList.toggle("active", p.id === subId));
+  document.querySelectorAll(".subtab").forEach(b => b.classList.toggle("active", b === btn));
+}
+
+/* Presets */
+function applyPreset(name, btn) {
+  document.querySelectorAll("#presetBar .seg-btn").forEach(b => b.classList.toggle("active", b === btn || b.dataset.preset === name));
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
+  if (name === "flash") {
+    document.getElementById("modeSel").value = "quick";
+    set("chkProtocol", true); set("chkTokenizer", true); set("chkFingerprint", true);
+    set("chkIQ", false); set("chkV11", true); set("chkVision", false); set("chkPdf", false);
+    set("chkAgent", false); set("chkSmartRoute", false); set("chkBilling", true);
+    set("chkQuant", false); set("chkConcurrency", false); set("chkRegex", true);
+    set("chkCutoff", false); set("chkLongCtx", false); set("chkOutputCap", false); set("chkCliff", false);
+    toast("已应用「闪电打假」预设（极省 Token，约 ¥0.02–¥2）");
+  } else if (name === "standard") {
+    document.getElementById("modeSel").value = "standard";
+    set("chkProtocol", true); set("chkTokenizer", true); set("chkFingerprint", true);
+    set("chkIQ", true); set("chkV11", true); set("chkVision", true); set("chkPdf", true);
+    set("chkAgent", true); set("chkSmartRoute", true); set("chkBilling", true);
+    set("chkQuant", true); set("chkConcurrency", true); set("chkRegex", true);
+    set("chkCutoff", true); set("chkLongCtx", true); set("chkOutputCap", false); set("chkCliff", false);
+    toast("已应用「标准全检」预设（全证据链 + 10 维智商）");
+  } else if (name === "iq_only") {
+    document.getElementById("modeSel").value = "deep";
+    set("chkProtocol", false); set("chkTokenizer", true); set("chkFingerprint", false);
+    set("chkIQ", true); set("chkV11", false); set("chkVision", false); set("chkPdf", false);
+    set("chkAgent", false); set("chkSmartRoute", false); set("chkBilling", false);
+    set("chkQuant", false); set("chkConcurrency", false); set("chkRegex", false);
+    set("chkCutoff", true); set("chkLongCtx", true); set("chkOutputCap", false); set("chkCliff", false);
+    toast("已应用「纯测智商 (34题)」预设（10 维 31 类翻倍动态题库 + 拆字核验）");
+  } else if (name === "agent") {
+    document.getElementById("modeSel").value = "standard";
+    set("chkProtocol", true); set("chkTokenizer", true); set("chkFingerprint", false);
+    set("chkIQ", true); set("chkV11", true); set("chkVision", true); set("chkPdf", true);
+    set("chkAgent", true); set("chkSmartRoute", true); set("chkBilling", true);
+    set("chkQuant", true); set("chkConcurrency", true); set("chkRegex", true);
+    set("chkCutoff", false); set("chkLongCtx", true); set("chkOutputCap", true); set("chkCliff", false);
+    toast("已应用「Agent 专项」预设（并行工具自愈 + 多轮防失忆 + 长输出上限）");
+  } else if (name === "extreme") {
+    document.getElementById("modeSel").value = "deep";
+    set("chkProtocol", true); set("chkTokenizer", true); set("chkFingerprint", true);
+    set("chkIQ", true); set("chkV11", true); set("chkVision", true); set("chkPdf", true);
+    set("chkAgent", true); set("chkSmartRoute", true); set("chkBilling", true);
+    set("chkQuant", true); set("chkConcurrency", true); set("chkRegex", true);
+    set("chkCutoff", true); set("chkLongCtx", true); set("chkOutputCap", true); set("chkCliff", true);
+    document.getElementById("cliffMaxK").value = "32";
+    toast("已应用「极限压测」预设（深度采样 + 32K 断崖热力表，建议设置预算熔断）");
+  }
+}
+
+/* Key-free Bookmarks (localStorage, NEVER stores API Key) */
+function loadBookmarks() {
+  let bms = [];
+  try { bms = JSON.parse(localStorage.getItem("truthlab_bookmarks_v11") || "[]"); } catch { bms = []; }
+  const bar = document.getElementById("bookmarkBar");
+  if (!bms.length) {
+    bar.innerHTML = '<span style="font-size:11.5px;color:var(--text-3);">无 Key 安全书签：暂无</span>';
+    return;
+  }
+  bar.innerHTML = '<span style="font-size:11.5px;color:var(--text-3);margin-right:4px;">常用站：</span>' + bms.map((b, i) => `
+    <span class="bm-chip" onclick="applyBookmark(${i})">
+      <span>${esc(b.label)}</span>
+      <span class="bm-del" onclick="event.stopPropagation();deleteBookmark(${i})">×</span>
+    </span>`).join("");
+}
+function saveBookmark() {
+  const url = document.getElementById("baseUrl").value.trim();
+  const model = document.getElementById("modelName").value.trim();
+  if (!url) { toast("请先填写 API 地址"); return; }
+  const label = prompt("为该常用站起个名字（仅存地址/模型/协议，绝不存 Key）：", `${model || "站点"} @ ${url.replace(/^https?:\/\//, "").slice(0, 18)}`);
+  if (!label) return;
+  let bms = [];
+  try { bms = JSON.parse(localStorage.getItem("truthlab_bookmarks_v11") || "[]"); } catch { bms = []; }
+  bms.unshift({
+    label: label.trim(),
+    base_url: url,
+    model,
+    protocol: document.getElementById("protocolSel").value,
+    proxy_url: document.getElementById("proxyUrl").value.trim(),
+  });
+  localStorage.setItem("truthlab_bookmarks_v11", JSON.stringify(bms.slice(0, 16)));
+  loadBookmarks();
+  toast("已保存无 Key 安全书签");
+}
+function applyBookmark(idx) {
+  let bms = [];
+  try { bms = JSON.parse(localStorage.getItem("truthlab_bookmarks_v11") || "[]"); } catch { bms = []; }
+  const b = bms[idx];
+  if (!b) return;
+  document.getElementById("baseUrl").value = b.base_url || "";
+  document.getElementById("modelName").value = b.model || "";
+  document.getElementById("protocolSel").value = b.protocol || "auto";
+  document.getElementById("proxyUrl").value = b.proxy_url || "";
+  toast(`已载入书签「${b.label}」（请填入 API Key）`);
+}
+function deleteBookmark(idx) {
+  let bms = [];
+  try { bms = JSON.parse(localStorage.getItem("truthlab_bookmarks_v11") || "[]"); } catch { bms = []; }
+  bms.splice(idx, 1);
+  localStorage.setItem("truthlab_bookmarks_v11", JSON.stringify(bms));
+  loadBookmarks();
+}
+
+async function fetchModels() {
+  const base_url = document.getElementById("baseUrl").value.trim();
+  const api_key = document.getElementById("apiKey").value.trim();
+  if (!base_url || !api_key) { toast("请先填写 API 地址与 Key"); return; }
+  toast("正在拉取 /v1/models 列表...");
+  try {
+    const r = await fetch(apiUrl("/api/models"), {
+      method: "POST", headers: apiHeaders(),
+      body: JSON.stringify({ base_url, api_key, protocol: document.getElementById("protocolSel").value }),
+    });
+    const d = await r.json();
+    if (d.models && d.models.length) {
+      const dl = document.getElementById("modelSuggestions");
+      dl.innerHTML = d.models.map(m => `<option value="${esc(m)}"></option>`).join("");
+      if (!document.getElementById("modelName").value.trim()) document.getElementById("modelName").value = d.models[0];
+      toast(`拉取成功，共 ${d.models.length} 个模型（可在输入框下拉选择）`);
+    } else {
+      toast(`未获取到模型列表 (HTTP ${d.status_code || 0})，请手动输入模型名`);
+    }
+  } catch (e) { toast("拉取失败：" + e.message); }
+}
+
+/* Single Audit Execution */
+function collectAuditPayload() {
+  return {
+    base_url: document.getElementById("baseUrl").value.trim(),
+    api_key: document.getElementById("apiKey").value.trim(),
+    model: document.getElementById("modelName").value.trim(),
+    protocol: document.getElementById("protocolSel").value,
+    mode: document.getElementById("modeSel").value,
+    compare_baseline_id: document.getElementById("baselineSel").value || null,
+    iq_seed: document.getElementById("iqSeed").value.trim() || null,
+    stealth_mode: document.getElementById("chkStealth").checked,
+    budget_cap_cny: parseFloat(document.getElementById("budgetCap").value || "0") || 0,
+    anonymize_domain: document.getElementById("chkAnonymize").checked,
+    run_plain_summary: document.getElementById("chkPlainSummary").checked,
+    run_protocol: document.getElementById("chkProtocol").checked,
+    run_tokenizer: document.getElementById("chkTokenizer").checked,
+    run_fingerprint: document.getElementById("chkFingerprint").checked,
+    run_iq: document.getElementById("chkIQ").checked,
+    run_v11_probes: document.getElementById("chkV11").checked,
+    run_vision: document.getElementById("chkVision").checked,
+    run_vision_hires: document.getElementById("chkVision").checked,
+    run_pdf_probe: document.getElementById("chkPdf").checked,
+    run_agent_loop: document.getElementById("chkAgent").checked,
+    run_smart_routing: document.getElementById("chkSmartRoute").checked,
+    run_billing_mult: document.getElementById("chkBilling").checked,
+    run_quant_precision: document.getElementById("chkQuant").checked,
+    run_concurrency: document.getElementById("chkConcurrency").checked,
+    run_regex_canary: document.getElementById("chkRegex").checked,
+    run_cutoff: document.getElementById("chkCutoff").checked,
+    run_long_context: document.getElementById("chkLongCtx").checked,
+    run_output_cap: document.getElementById("chkOutputCap").checked,
+    run_context_cliff: document.getElementById("chkCliff").checked,
+    context_cliff_max_k: parseInt(document.getElementById("cliffMaxK").value || "16", 10),
+    proxy_url: document.getElementById("proxyUrl").value.trim(),
+    timeout_sec: parseFloat(document.getElementById("timeoutSec").value || "75"),
+    max_concurrency: parseInt(document.getElementById("maxConc").value || "4", 10),
+    verify_ssl: document.getElementById("chkVerifySsl").checked,
+    extra_headers: document.getElementById("extraHeaders").value.trim(),
+  };
+}
+
+async function startAudit() {
+  const payload = collectAuditPayload();
+  if (!payload.base_url || !payload.api_key || !payload.model) {
+    toast("请完整填写 API 地址、Key 与请求模型");
+    return;
+  }
+  await _launchAuditJob("/api/audit/start", payload);
+}
+
+async function runDemoSandbox() {
+  switchView("viewAudit");
+  toast("启动零消耗本地模拟黑心中转沙箱...");
+  await _launchAuditJob("/api/audit/demo", {});
+}
+
+async function _launchAuditJob(endpoint, payload) {
+  if (currentAuditES) { currentAuditES.close(); currentAuditES = null; }
+  document.getElementById("startAuditBtn").disabled = true;
+  document.getElementById("cancelAuditBtn").style.display = "inline-flex";
+  document.getElementById("auditEmptyHero").style.display = "none";
+  document.getElementById("auditProgressCard").classList.add("show");
+  document.getElementById("auditProgressFill").style.width = "3%";
+  document.getElementById("auditProgressPct").textContent = "3%";
+  document.getElementById("auditProgressText").textContent = "正在启动检测任务...";
+  const logBox = document.getElementById("auditLogBox");
+  logBox.innerHTML = "";
+
+  try {
+    const r = await fetch(apiUrl(endpoint), {
+      method: "POST", headers: apiHeaders(), body: JSON.stringify(payload),
+    });
+    const d = await readJsonSafe(r);
+    if (!r.ok) { throw new Error(d.error || "启动失败"); }
+    currentJobId = d.job_id;
+
+    const es = new EventSource(apiUrl(`/api/audit/events?job_id=${encodeURIComponent(currentJobId)}`));
+    currentAuditES = es;
+    es.onmessage = (ev) => {
+      const msg = JSON.parse(ev.data);
+      if (msg.type === "progress") {
+        const p = Math.min(100, Math.max(0, msg.progress || 0));
+        document.getElementById("auditProgressFill").style.width = p + "%";
+        document.getElementById("auditProgressPct").textContent = p + "%";
+        document.getElementById("auditProgressText").textContent = msg.message || "";
+        const line = document.createElement("div");
+        line.textContent = `[${String(p).padStart(3, " ")}%] ${msg.message || ""}`;
+        logBox.appendChild(line);
+        logBox.scrollTop = logBox.scrollHeight;
+      } else if (msg.type === "done") {
+        es.close(); currentAuditES = null;
+        document.getElementById("startAuditBtn").disabled = false;
+        document.getElementById("cancelAuditBtn").style.display = "none";
+        document.getElementById("auditProgressCard").classList.remove("show");
+        currentReport = msg.report;
+        renderAuditReport(currentReport);
+        toast("零信任取证完成！");
+      } else if (msg.type === "error") {
+        es.close(); currentAuditES = null;
+        document.getElementById("startAuditBtn").disabled = false;
+        document.getElementById("cancelAuditBtn").style.display = "none";
+        toast("任务出错：" + (msg.message || "未知错误"));
+      }
+    };
+    es.onerror = () => {
+      if (currentAuditES) { currentAuditES.close(); currentAuditES = null; }
+      document.getElementById("startAuditBtn").disabled = false;
+      document.getElementById("cancelAuditBtn").style.display = "none";
+    };
+  } catch (e) {
+    document.getElementById("startAuditBtn").disabled = false;
+    document.getElementById("cancelAuditBtn").style.display = "none";
+    toast(e.message);
+  }
+}
+
+async function cancelAudit() {
+  if (!currentJobId) return;
+  await fetch(apiUrl("/api/audit/cancel"), { method: "POST", headers: apiHeaders(), body: JSON.stringify({ job_id: currentJobId }) });
+  toast("已发送停止信号，将基于当前已采集证据收尾...");
+}
+
+/* Report Rendering */
+function verdictColor(code) {
+  return ({
+    VERIFIED_STRONG: "var(--emerald)",
+    CONSISTENT_UNPROVEN: "var(--indigo)",
+    SUSPICIOUS: "var(--amber)",
+    LIKELY_FAKE_OR_WATERED: "var(--crimson)",
+    ERROR: "var(--crimson)",
+  })[code] || "var(--text-2)";
+}
+
+function getDisplayUrl(rep) {
+  const raw = (rep && rep.config && rep.config.base_url) || "";
+  if (document.getElementById("chkAnonymize") && document.getElementById("chkAnonymize").checked) {
+    return raw.replace(/^(https?:\/\/)([^/]+)/, "$1relay-masked.example");
+  }
+  return raw;
+}
+
+function renderAuditReport(rep) {
+  document.getElementById("auditEmptyHero").style.display = "none";
+  document.getElementById("auditReportStage").style.display = "block";
+  const v = rep.verdict || {};
+  const cfg = rep.config || {};
+  const tel = rep.telemetry || {};
+  const nf = tel.network_forensics || {};
+  const cost = tel.cost_estimate || {};
+  const iq = rep.iq;
+  const col = verdictColor(v.authenticity_code);
+  const mlm = (rep.attribution || {}).most_likely_model || {};
+
+  const metaChips = [
+    `模型 ${cfg.model || "-"}`,
+    `协议 ${v.detected_protocol || "-"}`,
+    `词表 ${v.detected_tokenizer_family || "未归类"}`,
+    nf.edge_pop ? `机房 ${nf.edge_pop}` : "",
+    (nf.gateway_stack && nf.gateway_stack.length) ? `网关 ${nf.gateway_stack.join("/")}` : "",
+    tel.stealth_mode ? "隐身模式" : "",
+    tel.budget_cap_hit ? `预算熔断 ¥${tel.budget_cap_cny}` : "",
+    `耗时 ${rep.duration_sec || 0}s`,
+  ].filter(Boolean);
+
+  document.getElementById("verdictHero").innerHTML = `
+    <div>
+      <div class="verdict-badge" style="color:${col};background:rgba(255,255,255,0.025)">
+        <span class="verdict-dot"></span>${esc(v.authenticity_code || "")} · 置信度 ${esc(v.confidence || "-")}
+      </div>
+      <div class="verdict-h1" style="color:${col}">${esc(v.authenticity_label || "完成")}</div>
+      <div class="verdict-sub">${esc(v.headline || "")}</div>
+      <div class="meta-strip">${metaChips.map(c => `<span class="meta-chip">${esc(c)}</span>`).join("")}</div>
+    </div>
+    <div class="score-cluster">
+      <div class="score-box" style="min-width:168px;" title="${esc(mlm.basis || '')}">
+        <div class="score-lbl">最可能真实模型</div>
+        <div class="score-val mono" style="font-size:15.5px;line-height:1.35;margin:10px 0 6px;color:var(--ivory);word-break:break-word;">${esc(mlm.model_name || cfg.model || "—")}</div>
+        <div class="score-sub">置信度 ${mlm.confidence_pct != null ? mlm.confidence_pct + "%" : "—"}</div>
+      </div>
+      <div class="score-box">
+        <div class="score-lbl">零信任可信分</div>
+        <div class="score-val" style="color:${col}">${v.trust_score != null ? v.trust_score : "-"}</div>
+        <div class="score-sub">满分 100</div>
+      </div>
+      <div class="score-box">
+        <div class="score-lbl">动态工程智商</div>
+        <div class="score-val">${iq ? iq.total_score : "—"}</div>
+        <div class="score-sub">${iq ? `${esc(iq.tier)} 级 · 指数 ${iq.iq_index}` : "未启用"}</div>
+      </div>
+    </div>`;
+
+  // Plain-Language ("大白话") Summary Card
+  const ps = rep.plain_summary;
+  const psCard = document.getElementById("plainSummaryCard");
+  if (ps && ps.content) {
+    psCard.style.display = "block";
+    document.getElementById("plainSummarySource").textContent = ps.source_label || "大白话总结";
+    document.getElementById("plainSummaryBody").textContent = ps.content;
+  } else {
+    psCard.style.display = "none";
+  }
+
+  // Cost Ribbon + Live Markup Calculator
+  const estCny = Number(cost.estimated_cny || 0);
+  const estUsd = Number(cost.estimated_usd || 0);
+  document.getElementById("costLine").innerHTML = `
+    <span>请求 <strong>${tel.total_requests || 0}</strong> 次</span>
+    <span>Token <strong>${(tel.input_tokens || 0).toLocaleString()}</strong> In / <strong>${(tel.output_tokens || 0).toLocaleString()}</strong> Out${tel.reasoning_tokens ? ` (思考 ${tel.reasoning_tokens.toLocaleString()})` : ""}</span>
+    <span>官价参考 <strong>¥${estCny.toFixed(4)}</strong> ($${estUsd.toFixed(4)})</span>
+    <span class="markup-box" title="填入中转站后台实际扣除的金额(¥)，自动核算隐藏暗倍率">
+      <span>中转实扣 ¥</span>
+      <input type="number" id="actualPaidInput" step="0.01" min="0" placeholder="填入" oninput="updateMarkupRatio(${estCny})" />
+      <span class="markup-badge" id="markupRatioOut"></span>
+    </span>`;
+
+  renderOverviewTab(rep);
+  renderEvidenceTab(rep);
+  renderTelemetryTab(rep);
+  renderIQTab(rep);
+}
+
+function updateMarkupRatio(estCny) {
+  const inp = document.getElementById("actualPaidInput");
+  const out = document.getElementById("markupRatioOut");
+  if (!inp || !out) return;
+  const paid = parseFloat(inp.value || "0");
+  if (!paid || estCny <= 0.00001) { out.textContent = ""; return; }
+  const ratio = paid / estCny;
+  let col = "var(--emerald)", lbl = "合理";
+  if (ratio > 1.8) { col = "var(--crimson)"; lbl = "暴利暗倍率"; }
+  else if (ratio > 1.18) { col = "var(--amber)"; lbl = "偏高"; }
+  out.style.color = col;
+  out.textContent = `${ratio.toFixed(2)}x (${lbl})`;
+}
+
+function renderOverviewTab(rep) {
+  const v = rep.verdict || {};
+  const attr = rep.attribution || {};
+  const fp = rep.fingerprint || {};
+  const cliff = rep.context_cliff;
+  const anomalies = v.suspected_anomalies || [];
+  const proofs = v.strong_proofs || [];
+  const recs = v.recommendations || [];
+
+  let html = '<div class="field-grid grid-2">';
+  html += `<div class="card"><div class="card-head"><div class="card-title">高危破绽与异常项 (${anomalies.length})</div></div>${
+    anomalies.length
+      ? `<ul class="clean-ul warn">${anomalies.map(a => `<li>${esc(a)}</li>`).join("")}</ul>`
+      : '<div style="font-size:12.5px;color:var(--emerald);">未发现明显掺水或伪造破绽</div>'
+  }</div>`;
+  html += `<div class="card"><div class="card-head"><div class="card-title">已获强证据与建议</div></div>${
+    proofs.length ? `<ul class="clean-ul ok" style="margin-bottom:10px;">${proofs.map(p => `<li>${esc(p)}</li>`).join("")}</ul>` : ""
+  }${
+    recs.length ? `<ul class="clean-ul">${recs.map(r => `<li>${esc(r)}</li>`).join("")}</ul>` : '<div style="font-size:12.5px;color:var(--text-3);">暂无额外建议</div>'
+  }</div></div>`;
+
+  // Underlying Attribution
+  if (attr.candidates && attr.candidates.length) {
+    html += `<div class="card"><div class="card-head"><div><div class="card-title">底层真实模型家族归因推演</div><div class="card-desc">${esc(attr.summary || "")}</div></div>${
+      attr.family_conflict ? '<span class="pill pill-FAIL">归因冲突预警</span>' : '<span class="pill pill-INFO">归因一致</span>'
+    }</div>`;
+    html += attr.candidates.slice(0, 5).map(c => `
+      <div class="bar-row">
+        <div class="bar-lbl">${esc(c.family_label)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, c.confidence_pct)}%;background:${c.confidence_pct >= 50 ? "var(--ivory)" : "var(--text-3)"}"></div></div>
+        <div class="bar-num">${c.confidence_pct}%</div>
+      </div>`).join("");
+    html += "</div>";
+  }
+
+  // Official Baseline JSD Match (with expandable per-task JSD heatmap!)
+  if (fp.baseline_matches && fp.baseline_matches.length) {
+    html += `<div class="card"><div class="card-head"><div class="card-title">本地官方基线 JSD 散度比对</div></div>
+      <table class="clean-tbl"><thead><tr><th>基线名</th><th>模型</th><th>平均 JSD</th><th>词表 L1</th><th>判定</th><th>分任务散度</th></tr></thead><tbody>`;
+    for (const m of fp.baseline_matches.slice(0, 8)) {
+      const pt = m.per_task_jsd || {};
+      const ptKeys = Object.keys(pt);
+      const ptBars = ptKeys.length ? `<details><summary style="cursor:pointer;font-size:11.5px;color:var(--text-2);">展开 ${ptKeys.length} 项</summary><div style="margin-top:6px;">${
+        ptKeys.map(k => `<div style="display:flex;align-items:center;gap:6px;margin:3px 0;font-size:11px;"><span style="width:92px">${esc(k)}</span><div style="flex:1;height:4px;background:rgba(255,255,255,0.08);border-radius:99px;"><div style="width:${Math.min(100, pt[k]*100)}%;height:100%;background:${pt[k]<=0.16?'var(--emerald)':pt[k]<=0.35?'var(--amber)':'var(--crimson)'};border-radius:99px;"></div></div><span class="mono">${Number(pt[k]).toFixed(3)}</span></div>`).join("")
+      }</div></details>` : "—";
+      html += `<tr><td>${esc(m.baseline_name)}</td><td class="mono">${esc(m.baseline_model)}</td><td class="mono">${Number(m.mean_jsd).toFixed(4)}</td><td class="mono">${m.tokenizer_l1 != null ? Number(m.tokenizer_l1).toFixed(4) : "—"}</td><td><span class="pill pill-${m.match_level === 'STRONG_MATCH' ? 'PASS' : m.match_level === 'MISMATCH' ? 'FAIL' : 'WARN'}">${esc(m.match_level)}</span></td><td>${ptBars}</td></tr>`;
+    }
+    html += "</tbody></table></div>";
+  }
+
+  // Context Cliff Heatmap
+  if (cliff && cliff.steps && cliff.steps.length) {
+    html += `<div class="card"><div class="card-head"><div class="card-title">上下文断崖记忆热力表（实测有效窗口 ${cliff.max_verified_k || 0}K）</div></div>
+      <table class="clean-tbl"><thead><tr><th>档位</th><th>上报输入 Token</th><th>头部召回</th><th>中段召回</th><th>尾部召回</th><th>耗时</th></tr></thead><tbody>`;
+    for (const s of cliff.steps) {
+      const cell = (ok) => `<span class="pill pill-${ok ? 'PASS' : 'FAIL'}">${ok ? 'PASS' : 'MISS'}</span>`;
+      html += `<tr><td class="mono">${s.target_k}K</td><td class="mono">${(s.reported_input_tokens || 0).toLocaleString()}</td><td>${cell(s.head_ok)}</td><td>${cell(s.mid_ok)}</td><td>${cell(s.tail_ok)}</td><td class="mono">${s.latency_ms}ms</td></tr>`;
+    }
+    html += "</tbody></table></div>";
+  }
+  document.getElementById("subOverview").innerHTML = html;
+}
+
+function renderEvidenceTab(rep) {
+  const evs = rep.evidences || [];
+  const counts = { ALL: evs.length, BAD: evs.filter(e => e.status === "FAIL" || e.status === "WARN").length, PASS: evs.filter(e => e.status === "PASS").length };
+  let html = `<div style="display:flex;gap:8px;margin-bottom:14px;">
+    <button class="btn btn-sm active" onclick="filterEvidence('ALL', this)">全部 (${counts.ALL})</button>
+    <button class="btn btn-sm" onclick="filterEvidence('BAD', this)">异常/告警 (${counts.BAD})</button>
+    <button class="btn btn-sm" onclick="filterEvidence('PASS', this)">验证通过 (${counts.PASS})</button>
+  </div><div class="ev-list" id="evListContainer">`;
+  for (const ev of evs) {
+    html += `<div class="ev-item" data-st="${esc(ev.status)}">
+      <div class="ev-head">
+        <span class="pill pill-${esc(ev.status)}">${esc(ev.status)}</span>
+        <span class="layer-chip">${esc(ev.layer)}</span>
+        <span class="ev-title">${esc(ev.title)}</span>
+        <span class="ev-impact">${ev.score_impact >= 0 ? "+" : ""}${ev.score_impact}</span>
+      </div>
+      <div class="ev-sum">${esc(ev.summary)}</div>
+      <details class="ev-raw"><summary>查看原始取证数据</summary><pre>${esc(JSON.stringify(ev.details || {}, null, 2))}</pre></details>
+    </div>`;
+  }
+  html += "</div>";
+  document.getElementById("subEvidence").innerHTML = html;
+}
+
+function filterEvidence(kind, btn) {
+  btn.parentElement.querySelectorAll("button").forEach(b => b.classList.remove("btn-primary"));
+  btn.classList.add("btn-primary");
+  document.querySelectorAll("#evListContainer .ev-item").forEach(el => {
+    const st = el.dataset.st;
+    const show = kind === "ALL" || (kind === "BAD" && (st === "FAIL" || st === "WARN")) || (kind === "PASS" && st === "PASS");
+    el.style.display = show ? "block" : "none";
+  });
+}
+
+function renderTelemetryTab(rep) {
+  const tel = rep.telemetry || {};
+  const sm = rep.stream_metrics || {};
+  const fp = rep.fingerprint || {};
+  const nf = tel.network_forensics || {};
+
+  let html = `<div class="kpi-grid">
+    <div class="kpi-card"><div class="k-lbl">P50 / P95 / P99 延迟</div><div class="k-val" style="font-size:17px;">${tel.p50_latency_ms || 0} / ${tel.p95_latency_ms || 0} / ${tel.p99_latency_ms || 0}ms</div><div class="k-sub">抖动系数 CV = ${tel.latency_jitter_cv != null ? tel.latency_jitter_cv : "—"}</div></div>
+    <div class="kpi-card"><div class="k-lbl">流式首字 TTFT / 吞吐</div><div class="k-val" style="font-size:17px;">${sm.ttft_ms != null ? sm.ttft_ms + "ms" : "—"} / ${sm.effective_tps || 0} t/s</div><div class="k-sub">${sm.fake_stream_suspected ? "⚠ 疑似假流式缓冲" : `Chunks ${sm.chunk_count || 0}`}</div></div>
+    <div class="kpi-card"><div class="k-lbl">单 Token 分布采样</div><div class="k-val" style="font-size:17px;">${fp.total_samples || 0} 样本</div><div class="k-sub">前半/后半漂移 JSD=${fp.split_half_jsd != null ? fp.split_half_jsd : "—"}</div></div>
+    <div class="kpi-card"><div class="k-lbl">网络出口与网关</div><div class="k-val" style="font-size:16px;">${esc(nf.edge_pop || "未知")}</div><div class="k-sub">${esc((nf.gateway_stack || []).join(" / ") || "未识别反代头")}</div></div>
+  </div>`;
+
+  // Latency Histogram SVG
+  const hist = tel.latency_histogram;
+  if (hist && hist.bins && hist.bins.length) {
+    const maxB = Math.max(1, ...hist.bins);
+    const bars = hist.bins.map((cnt, i) => {
+      const h = Math.max(4, Math.round((cnt / maxB) * 76));
+      return `<g transform="translate(${i * 58}, 0)"><rect x="8" y="${84 - h}" width="40" height="${h}" rx="4" fill="rgba(244,244,245,0.75)"/><text x="28" y="${78 - h}" text-anchor="middle" fill="#a1a1aa" font-size="10" font-family="monospace">${cnt}</text></g>`;
+    }).join("");
+    html += `<div class="card"><div class="card-head"><div class="card-title">请求延迟分布直方图 (${hist.min_ms}ms – ${hist.max_ms}ms)</div>${tel.bimodal_latency_suspected ? '<span class="pill pill-WARN">检测到双峰路由抖动</span>' : ''}</div>
+      <svg viewBox="0 0 ${hist.bins.length * 58} 96" style="width:100%;max-width:520px;height:96px;display:block;">${bars}</svg></div>`;
+  }
+
+  // Distributions
+  const dists = fp.distributions || {};
+  const dKeys = Object.keys(dists);
+  if (dKeys.length) {
+    html += `<div class="card"><div class="card-head"><div class="card-title">单 Token 输出行为分布指纹</div></div><div class="field-grid grid-2">`;
+    for (const k of dKeys) {
+      const map = dists[k] || {};
+      const entries = Object.entries(map).slice(0, 5);
+      const tot = Object.values(map).reduce((a, b) => a + b, 0) || 1;
+      html += `<div style="padding:12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-sm);">
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text);">${esc(k)}</div>
+        ${entries.map(([tok, c]) => `<div class="bar-row" style="margin:4px 0;"><div class="bar-lbl" style="width:74px;font-family:var(--mono);">${esc(tok)}</div><div class="bar-track"><div class="bar-fill" style="width:${(c/tot*100).toFixed(1)}%"></div></div><div class="bar-num" style="width:46px;">${Math.round(c/tot*100)}%</div></div>`).join("")}
+      </div>`;
+    }
+    html += "</div></div>";
+  }
+
+  // Returned Models / Headers
+  html += `<div class="card"><div class="card-head"><div class="card-title">服务端元数据与响应头取证</div></div>
+    <pre style="font-family:var(--mono);font-size:11.5px;color:var(--text-2);background:var(--bg-rail);padding:12px;border-radius:8px;border:1px solid var(--border);overflow-x:auto;">${esc(JSON.stringify({
+      returned_models: tel.returned_models,
+      response_id_prefixes: tel.response_id_prefixes,
+      system_fingerprints: tel.system_fingerprints,
+      server_headers: tel.server_headers,
+      tokenizer_vector: fp.tokenizer_vector,
+    }, null, 2))}</pre></div>`;
+
+  document.getElementById("subTelemetry").innerHTML = html;
+}
+
+function buildRadarSVG(dimScores) {
+  const keys = Object.keys(dimScores || {});
+  const n = keys.length;
+  if (n < 3) return "";
+  const cx = 160, cy = 148, R = 96;
+  const pt = (i, r) => {
+    const a = -Math.PI / 2 + (2 * Math.PI * i) / n;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  };
+  let rings = "";
+  for (const frac of [0.25, 0.5, 0.75, 1.0]) {
+    const pts = keys.map((_, i) => pt(i, R * frac).map(v => v.toFixed(1)).join(",")).join(" ");
+    rings += `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,0.09)" stroke-width="1"/>`;
+  }
+  let axes = "", labels = "";
+  const valPts = [];
+  keys.forEach((k, i) => {
+    const d = dimScores[k];
+    const pct = Math.max(0, Math.min(100, Number(d.score_pct || 0))) / 100;
+    const [ax, ay] = pt(i, R);
+    axes += `<line x1="${cx}" y1="${cy}" x2="${ax.toFixed(1)}" y2="${ay.toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+    valPts.push(pt(i, R * Math.max(0.06, pct)).map(v => v.toFixed(1)).join(","));
+    const [lx, ly] = pt(i, R + 22);
+    labels += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="#a1a1aa" font-size="10.5">${esc((d.label || k).slice(0, 7))}</text>`;
+  });
+  return `<svg viewBox="0 0 320 296" style="width:100%;max-width:320px;display:block;margin:0 auto;">
+    ${rings}${axes}
+    <polygon points="${valPts.join(" ")}" fill="rgba(244,244,245,0.16)" stroke="#f4f4f5" stroke-width="1.8"/>
+    ${labels}
+  </svg>`;
+}
+
+function renderIQTab(rep) {
+  const iq = rep.iq;
+  if (!iq) {
+    document.getElementById("subIQ").innerHTML = '<div class="card"><div style="color:var(--text-3);font-size:13px;">本次体检未启用动态智商测评模块。</div></div>';
+    return;
+  }
+  const dims = iq.dimension_scores || {};
+  let html = `<div class="card"><div class="card-head"><div><div class="card-title">${esc(iq.tier_label)} · 综合得分 ${iq.total_score}/100 (指数 ${iq.iq_index})</div><div class="card-desc">动态防污染题库 Seed = ${iq.seed} · 涵盖 ${Object.keys(dims).length} 个认知与工程维度</div></div>${
+    iq.claimed_tier_mismatch ? '<span class="pill pill-FAIL">宣称档位背离</span>' : '<span class="pill pill-PASS">能力档位相符</span>'
+  }</div><div class="field-grid grid-2" style="align-items:center;">
+    <div>${buildRadarSVG(dims)}</div>
+    <div>${Object.entries(dims).map(([k, d]) => `
+      <div class="bar-row">
+        <div class="bar-lbl">${esc(d.label)} (${d.passed}/${d.count})</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${d.score_pct}%;background:${d.score_pct >= 80 ? 'var(--emerald)' : d.score_pct >= 50 ? 'var(--amber)' : 'var(--crimson)'}"></div></div>
+        <div class="bar-num">${d.score_pct}%</div>
+      </div>`).join("")}</div>
+  </div></div>`;
+
+  html += '<div class="ev-list">';
+  for (const q of (iq.questions || [])) {
+    html += `<div class="ev-item">
+      <div class="ev-head">
+        <span class="pill pill-${q.passed ? 'PASS' : 'FAIL'}">${q.passed ? 'PASS' : 'FAIL'}</span>
+        <span class="layer-chip">${esc(q.dimension_label)}</span>
+        <span class="ev-title">${esc(q.title)}</span>
+        <span class="ev-impact">${q.score}/${q.max_score} · ${q.latency_ms}ms</span>
+      </div>
+      <div class="ev-sum">${esc(q.grading_notes)}</div>
+      <details class="ev-raw"><summary>查看题目摘要与模型实答</summary><pre>【题目】\n${esc(q.prompt_preview)}\n\n【模型实答】\n${esc(q.actual)}</pre></details>
+    </div>`;
+  }
+  html += "</div>";
+  document.getElementById("subIQ").innerHTML = html;
+}
+
+/* Export HTML / Markdown / Canvas PNG Poster / Baseline */
+function exportAudit(fmt) {
+  if (!currentJobId && !(currentReport && currentReport.audit_id)) { toast("暂无可导出的报告"); return; }
+  const anon = document.getElementById("chkAnonymize").checked ? "1" : "0";
+  const url = currentJobId
+    ? apiUrl(`/api/audit/export?job_id=${encodeURIComponent(currentJobId)}&format=${fmt}&anonymize=${anon}`)
+    : apiUrl(`/api/history/${encodeURIComponent(currentReport.audit_id)}/export?format=${fmt}&anonymize=${anon}`);
+  window.open(url, "_blank");
+}
+
+function copyPlainSummary() {
+  const ps = currentReport && currentReport.plain_summary;
+  if (!ps || !ps.content) { toast("暂无大白话总结"); return; }
+  const txt = `【LLM-TruthLab 大白话体检单 · ${(currentReport.config || {}).model || ""}】\n${ps.content}`;
+  navigator.clipboard.writeText(txt).then(() => toast("已复制大白话总结")).catch(() => toast("复制失败"));
+}
+
+function copyAuditMarkdown() {
+  if (!currentReport) { toast("请先完成一次检测"); return; }
+  const r = currentReport, v = r.verdict || {}, tel = r.telemetry || {}, cost = tel.cost_estimate || {};
+  const ps = r.plain_summary || {};
+  const mlm = (r.attribution || {}).most_likely_model || {};
+  const lines = [
+    `## LLM-TruthLab v11.0 零信任 API 体检报告`,
+    `- **测试端点**：\`${getDisplayUrl(r)}\` | **宣称模型**：\`${(r.config || {}).model || "-"}\``,
+    mlm.model_name ? `- **最可能真实模型**：\`${mlm.model_name}\`（置信度 **${mlm.confidence_pct}%**）` : "",
+    `- **仲裁结论**：**${v.authenticity_label}** (\`${v.authenticity_code}\`) · 可信度 **${v.trust_score}/100**`,
+    `- **协议与词表**：\`${v.detected_protocol}\` | ${v.detected_tokenizer_family}`,
+    r.iq ? `- **动态工程智商**：**${r.iq.total_score}/100** (${r.iq.tier_label}，Seed=${r.iq.seed})` : "",
+    `- **本次消耗**：${(tel.input_tokens || 0).toLocaleString()} In / ${(tel.output_tokens || 0).toLocaleString()} Out（官价参考 ¥${Number(cost.estimated_cny || 0).toFixed(4)}）`,
+    ps.content ? `\n### 大白话总结\n${ps.content}` : "",
+    (v.suspected_anomalies || []).length ? `\n### 检出异常\n` + v.suspected_anomalies.map(a => `- ${a}`).join("\n") : "\n> 未检出掺水异常。",
+  ].filter(Boolean).join("\n");
+  navigator.clipboard.writeText(lines).then(() => toast("已复制脱敏 Markdown 报告")).catch(() => toast("复制失败"));
+}
+
+function exportPosterPNG() {
+  if (!currentReport) { toast("请先完成检测再导出战报图"); return; }
+  const r = currentReport, v = r.verdict || {}, tel = r.telemetry || {}, cost = tel.cost_estimate || {}, iq = r.iq;
+  const W = 980, H = 640;
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d");
+
+  // Obsidian minimalist poster backdrop
+  ctx.fillStyle = "#08080a"; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "rgba(255,255,255,0.10)"; ctx.lineWidth = 1.5;
+  ctx.strokeRect(20, 20, W - 40, H - 40);
+
+  // Header
+  ctx.fillStyle = "#f4f4f5"; ctx.font = "600 18px 'Segoe UI', sans-serif";
+  ctx.fillText("LLM-TRUTHLAB v11.0  ·  ZERO-TRUST FORENSIC REPORT", 46, 62);
+  ctx.fillStyle = "#71717a"; ctx.font = "13px Consolas, monospace";
+  ctx.fillText(`ENDPOINT: ${getDisplayUrl(r)}   |   MODEL: ${(r.config || {}).model || "-"}`, 46, 86);
+
+  // Verdict
+  const colMap = { VERIFIED_STRONG: "#10b981", CONSISTENT_UNPROVEN: "#818cf8", SUSPICIOUS: "#f59e0b", LIKELY_FAKE_OR_WATERED: "#f43f5e", ERROR: "#f43f5e" };
+  const vc = colMap[v.authenticity_code] || "#f4f4f5";
+  ctx.fillStyle = vc; ctx.font = "700 30px 'Segoe UI', 'Microsoft YaHei', sans-serif";
+  ctx.fillText(v.authenticity_label || "", 46, 142);
+  ctx.fillStyle = "#a1a1aa"; ctx.font = "14px 'Segoe UI', 'Microsoft YaHei', sans-serif";
+  ctx.fillText((v.headline || "").slice(0, 56), 46, 172);
+
+  // Score tiles
+  const drawTile = (x, y, w, h, lbl, val, sub, color) => {
+    ctx.fillStyle = "#121216"; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = "rgba(255,255,255,0.09)"; ctx.strokeRect(x, y, w, h);
+    ctx.fillStyle = "#71717a"; ctx.font = "12px 'Segoe UI', sans-serif"; ctx.fillText(lbl, x + 16, y + 26);
+    ctx.fillStyle = color || "#f4f4f5";
+    const sVal = String(val);
+    ctx.font = sVal.length > 8 ? "700 20px Consolas, monospace" : "700 34px Consolas, monospace";
+    ctx.fillText(sVal, x + 16, sVal.length > 8 ? y + 64 : y + 68);
+    ctx.fillStyle = "#a1a1aa"; ctx.font = "12px 'Segoe UI', sans-serif"; ctx.fillText(sub, x + 16, y + 92);
+  };
+  const mlm = (r.attribution || {}).most_likely_model || {};
+  drawTile(46, 200, 150, 108, "零信任可信分", `${v.trust_score ?? 0}`, "满分 100", vc);
+  drawTile(208, 200, 150, 108, "工程动态智商", iq ? `${iq.total_score}` : "N/A", iq ? `${iq.tier} 级 · 指数 ${iq.iq_index}` : "未启用", "#f4f4f5");
+  drawTile(370, 200, 320, 108, "最可能真实模型", (mlm.model_name || (r.config || {}).model || "N/A").slice(0, 18), `置信度 ${mlm.confidence_pct ?? 0}% · 参考 ¥${Number(cost.estimated_cny || 0).toFixed(3)}`, "#818cf8");
+
+  // Anomalies / Attribution list
+  ctx.fillStyle = "#f4f4f5"; ctx.font = "600 15px 'Segoe UI', 'Microsoft YaHei', sans-serif";
+  ctx.fillText("核心取证摘要", 46, 348);
+  const bullets = (v.suspected_anomalies && v.suspected_anomalies.length ? v.suspected_anomalies : (v.strong_proofs || ["未发现明显异常破绽"])).slice(0, 5);
+  ctx.font = "13px 'Segoe UI', 'Microsoft YaHei', sans-serif";
+  bullets.forEach((b, i) => {
+    ctx.fillStyle = (v.suspected_anomalies && v.suspected_anomalies.length) ? "#fda4af" : "#6ee7b7";
+    ctx.fillText("• " + String(b).slice(0, 54), 46, 378 + i * 28);
+  });
+
+  // Mini IQ Radar on right
+  if (iq && iq.dimension_scores) {
+    const keys = Object.keys(iq.dimension_scores);
+    const n = keys.length;
+    if (n >= 3) {
+      const rcx = 820, rcy = 390, R = 95;
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      [0.33, 0.66, 1.0].forEach(f => {
+        ctx.beginPath();
+        keys.forEach((_, i) => {
+          const a = -Math.PI / 2 + (2 * Math.PI * i) / n;
+          const px = rcx + R * f * Math.cos(a), py = rcy + R * f * Math.sin(a);
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.closePath(); ctx.stroke();
+      });
+      ctx.beginPath();
+      keys.forEach((k, i) => {
+        const p = Math.max(0.08, (iq.dimension_scores[k].score_pct || 0) / 100);
+        const a = -Math.PI / 2 + (2 * Math.PI * i) / n;
+        const px = rcx + R * p * Math.cos(a), py = rcy + R * p * Math.sin(a);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      ctx.fillStyle = "rgba(244,244,245,0.18)"; ctx.fill();
+      ctx.strokeStyle = "#f4f4f5"; ctx.lineWidth = 2; ctx.stroke();
+    }
+  }
+
+  ctx.fillStyle = "#52525b"; ctx.font = "12px Consolas, monospace";
+  ctx.fillText("Generated locally by LLM-TruthLab v11.0  ·  API Key Automatically Redacted", 46, H - 36);
+
+  const a = document.createElement("a");
+  a.download = `TruthLab_${(r.config || {}).model || "report"}_${Date.now()}.png`;
+  a.href = cv.toDataURL("image/png");
+  a.click();
+  toast("已导出高清暗黑战报 PNG！");
+}
+
+async function saveCurrentAsBaseline() {
+  if (!currentJobId && !(currentReport && currentReport.audit_id)) { toast("暂无可存报告"); return; }
+  const defName = `${(currentReport.config || {}).model || "model"} 官方基线`;
+  const name = prompt("为该官方基线命名：", defName);
+  if (!name) return;
+  const r = await fetch(apiUrl("/api/baselines/save"), {
+    method: "POST", headers: apiHeaders(),
+    body: JSON.stringify({ job_id: currentJobId || "", audit_id: (currentReport && currentReport.audit_id) || "", name }),
+  });
+  const d = await r.json();
+  if (r.ok) { toast("已存入本地官方基线库！"); loadBaselines(); }
+  else toast("保存失败：" + (d.error || ""));
+}
+
+/* ============================================================
+   A/B ARENA
+   ============================================================ */
+function cloneAToB() {
+  document.getElementById("abUrlB").value = document.getElementById("abUrlA").value;
+  document.getElementById("abKeyB").value = document.getElementById("abKeyA").value;
+  document.getElementById("abProtoB").value = document.getElementById("abProtoA").value;
+  toast("已复制 A 端地址与 Key 至 B 端，请修改模型 B 名称抓别名套娃");
+}
+
+async function startArena() {
+  const payload = {
+    a: { base_url: document.getElementById("abUrlA").value.trim(), api_key: document.getElementById("abKeyA").value.trim(), model: document.getElementById("abModelA").value.trim(), protocol: document.getElementById("abProtoA").value },
+    b: { base_url: document.getElementById("abUrlB").value.trim(), api_key: document.getElementById("abKeyB").value.trim(), model: document.getElementById("abModelB").value.trim(), protocol: document.getElementById("abProtoB").value },
+    shared: { mode: document.getElementById("abMode").value, run_iq: document.getElementById("abRunIQ").checked, run_protocol: document.getElementById("abRunProto").checked },
+  };
+  document.getElementById("startArenaBtn").disabled = true;
+  document.getElementById("arenaProgressCard").classList.add("show");
+  const r = await fetch(apiUrl("/api/arena/start"), { method: "POST", headers: apiHeaders(), body: JSON.stringify(payload) });
+  const d = await r.json();
+  if (!r.ok) { document.getElementById("startArenaBtn").disabled = false; document.getElementById("arenaProgressCard").classList.remove("show"); toast(d.error || "启动失败"); return; }
+  currentArenaJobId = d.job_id;
+  const es = new EventSource(apiUrl(`/api/audit/events?job_id=${encodeURIComponent(currentArenaJobId)}`));
+  es.onmessage = (ev) => {
+    const m = JSON.parse(ev.data);
+    if (m.type === "progress") {
+      document.getElementById("arenaProgressFill").style.width = (m.progress || 0) + "%";
+      document.getElementById("arenaProgressPct").textContent = (m.progress || 0) + "%";
+      document.getElementById("arenaProgressText").textContent = m.message || "";
+    } else if (m.type === "done") {
+      es.close(); document.getElementById("startArenaBtn").disabled = false;
+      document.getElementById("arenaProgressCard").classList.remove("show");
+      currentArena = m.arena; renderArenaResult(currentArena);
+    } else if (m.type === "error") {
+      es.close(); document.getElementById("startArenaBtn").disabled = false; toast(m.message || "对决失败");
+    }
+  };
+}
+
+function renderArenaResult(a) {
+  const c = a.comparison || {};
+  const box = document.getElementById("arenaResultBox");
+  box.style.display = "block";
+  const bad = c.relation_code === "ALIAS_FRAUD_DETECTED" || c.relation_code === "DIFFERENT_MODEL_FRAUD";
+  box.innerHTML = `<div class="card">
+    <div class="card-head">
+      <div>
+        <div class="verdict-h1" style="font-size:18px;color:${bad ? 'var(--crimson)' : 'var(--emerald)'}">${esc(c.relation_label)}</div>
+        <div class="card-desc">${esc(c.relation_summary)}</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm" onclick="copyArenaMarkdown()">复制 Markdown</button>
+        <button class="btn btn-sm" onclick="window.open(apiUrl('/api/arena/export?job_id=${encodeURIComponent(currentArenaJobId)}&format=html'), '_blank')">导出 HTML</button>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="k-lbl">A ↔ B 直接 JSD</div><div class="k-val">${c.mean_jsd != null ? Number(c.mean_jsd).toFixed(4) : "—"}</div></div>
+      <div class="kpi-card"><div class="k-lbl">词表距离 L1</div><div class="k-val">${c.tokenizer_l1 != null ? Number(c.tokenizer_l1).toFixed(4) : "—"}</div></div>
+      <div class="kpi-card"><div class="k-lbl">A 端智商</div><div class="k-val">${c.iq_a != null ? c.iq_a : "—"}</div></div>
+      <div class="kpi-card"><div class="k-lbl">B 端智商</div><div class="k-val">${c.iq_b != null ? c.iq_b : "—"}</div></div>
+    </div>
+    ${(c.h2h_questions || []).length ? `<table class="clean-tbl"><thead><tr><th>维度</th><th>题目</th><th>A 得分</th><th>B 得分</th></tr></thead><tbody>${
+      c.h2h_questions.map(q => `<tr><td>${esc(q.dimension_label)}</td><td>${esc(q.title)}</td><td class="mono">${q.score_a}/${q.max_score}</td><td class="mono">${q.score_b}/${q.max_score}</td></tr>`).join("")
+    }</tbody></table>` : ""}
+  </div>`;
+}
+
+function copyArenaMarkdown() {
+  if (!currentArena) return;
+  const c = currentArena.comparison || {};
+  const txt = `## LLM-TruthLab A/B 对决战报\n- **结论**：${c.relation_label}\n- **JSD 散度**：${c.mean_jsd} | **词表 L1**：${c.tokenizer_l1}\n- **摘要**：${c.relation_summary}`;
+  navigator.clipboard.writeText(txt).then(() => toast("已复制 A/B Markdown 战报"));
+}
+
+/* ============================================================
+   BATCH LEADERBOARD
+   ============================================================ */
+function addBatchRow(label = "", url = "", key = "", model = "", proto = "auto") {
+  const tb = document.getElementById("batchRowsBody");
+  const idx = tb.children.length + 1;
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input type="text" class="b-lbl" value="${esc(label || ("站点 " + idx))}" /></td>
+    <td><input type="text" class="mono b-url" value="${esc(url)}" placeholder="https://relay.com/v1" /></td>
+    <td><input type="password" class="mono b-key" value="${esc(key)}" placeholder="sk-..." /></td>
+    <td><input type="text" class="mono b-mod" value="${esc(model)}" placeholder="claude-opus-4-6" /></td>
+    <td><select class="b-pro"><option value="auto" ${proto==='auto'?'selected':''}>自动</option><option value="openai_chat" ${proto==='openai_chat'?'selected':''}>OpenAI</option><option value="anthropic" ${proto==='anthropic'?'selected':''}>Anthropic</option><option value="gemini" ${proto==='gemini'?'selected':''}>Gemini</option></select></td>
+    <td><button class="btn btn-sm btn-ghost" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tb.appendChild(tr);
+}
+function toggleBatchPaste(force) {
+  const el = document.getElementById("batchPasteBox");
+  el.style.display = force === false ? "none" : (el.style.display === "none" ? "block" : "none");
+}
+function applyBatchPaste() {
+  const lines = document.getElementById("batchPasteText").value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  if (!lines.length) return;
+  document.getElementById("batchRowsBody").innerHTML = "";
+  lines.forEach((ln, i) => {
+    const parts = ln.includes("|") ? ln.split("|") : ln.split(",");
+    const p = parts.map(x => x.trim());
+    if (p.length >= 4) addBatchRow(p[0], p[1], p[2], p[3]);
+    else if (p.length === 3) addBatchRow("站点 " + (i + 1), p[0], p[1], p[2]);
+  });
+  toggleBatchPaste(false);
+  toast(`已导入 ${lines.length} 个候选站点`);
+}
+async function startBatch() {
+  const targets = [];
+  document.querySelectorAll("#batchRowsBody tr").forEach(tr => {
+    const base_url = tr.querySelector(".b-url").value.trim();
+    const api_key = tr.querySelector(".b-key").value.trim();
+    const model = tr.querySelector(".b-mod").value.trim();
+    if (base_url && api_key && model) {
+      targets.push({ label: tr.querySelector(".b-lbl").value.trim() || model, base_url, api_key, model, protocol: tr.querySelector(".b-pro").value });
+    }
+  });
+  if (targets.length < 2) { toast("请至少完整填写 2 个目标站点"); return; }
+  document.getElementById("startBatchBtn").disabled = true;
+  document.getElementById("batchProgressCard").classList.add("show");
+  const r = await fetch(apiUrl("/api/batch/start"), {
+    method: "POST", headers: apiHeaders(),
+    body: JSON.stringify({ targets, mode: document.getElementById("batchMode").value, run_iq: document.getElementById("batchRunIQ").checked, run_protocol: document.getElementById("batchRunProto").checked }),
+  });
+  const d = await r.json();
+  if (!r.ok) { document.getElementById("startBatchBtn").disabled = false; document.getElementById("batchProgressCard").classList.remove("show"); toast(d.error || "失败"); return; }
+  currentBatchJobId = d.job_id;
+  const es = new EventSource(apiUrl(`/api/audit/events?job_id=${encodeURIComponent(currentBatchJobId)}`));
+  es.onmessage = (ev) => {
+    const m = JSON.parse(ev.data);
+    if (m.type === "progress") {
+      document.getElementById("batchProgressFill").style.width = (m.progress || 0) + "%";
+      document.getElementById("batchProgressPct").textContent = (m.progress || 0) + "%";
+      document.getElementById("batchProgressText").textContent = m.message || "";
+    } else if (m.type === "done") {
+      es.close(); document.getElementById("startBatchBtn").disabled = false;
+      document.getElementById("batchProgressCard").classList.remove("show");
+      currentBatch = m.batch; renderBatchResult(currentBatch);
+    } else if (m.type === "error") {
+      es.close(); document.getElementById("startBatchBtn").disabled = false; toast(m.message || "横评失败");
+    }
+  };
+}
+function renderBatchResult(b) {
+  const box = document.getElementById("batchResultBox");
+  box.style.display = "block";
+  const rows = b.leaderboard || [];
+  let html = `<div class="card"><div class="card-head"><div class="card-title">横评红黑榜（共 ${rows.length} 站）</div>
+    <div style="display:flex;gap:8px;"><button class="btn btn-sm" onclick="copyBatchMarkdown()">复制 Markdown</button><button class="btn btn-sm" onclick="window.open(apiUrl('/api/batch/export?job_id=${encodeURIComponent(currentBatchJobId)}&format=html'), '_blank')">导出 HTML</button></div></div>
+    <table class="clean-tbl"><thead><tr><th>排名</th><th>渠道</th><th>模型</th><th>结论</th><th>可信分</th><th>智商</th><th>P50 延迟</th></tr></thead><tbody>`;
+  rows.forEach((r, i) => {
+    html += `<tr><td class="mono">#${i + 1}</td><td><strong>${esc(r.label)}</strong></td><td class="mono">${esc(r.model)}</td><td><span class="pill pill-${r.authenticity_code==='VERIFIED_STRONG'?'PASS':r.authenticity_code==='LIKELY_FAKE_OR_WATERED'?'FAIL':'WARN'}">${esc(r.authenticity_label)}</span></td><td class="mono">${r.trust_score}</td><td class="mono">${r.iq_score != null ? r.iq_score : "—"}</td><td class="mono">${r.p50_latency_ms || 0}ms</td></tr>`;
+  });
+  html += "</tbody></table></div>";
+  if (b.similarity_matrix && b.similarity_matrix.length) {
+    html += `<div class="card"><div class="card-head"><div class="card-title">N×N 行为分布 JSD 相似度矩阵（数值越小越疑似同一上游）</div></div>
+      <table class="clean-tbl"><thead><tr><th>渠道</th>${rows.map(r => `<th>${esc(r.label)}</th>`).join("")}</tr></thead><tbody>`;
+    b.similarity_matrix.forEach((row, i) => {
+      html += `<tr><td><strong>${esc(rows[i] ? rows[i].label : i)}</strong></td>${row.map((val, j) => `<td class="mono" style="color:${i===j?'var(--text-3)':val!=null&&val<=0.16?'var(--crimson)':'var(--text-2)'}">${val != null ? Number(val).toFixed(3) : "—"}</td>`).join("")}</tr>`;
+    });
+    html += "</tbody></table></div>";
+  }
+  box.innerHTML = html;
+}
+function copyBatchMarkdown() {
+  if (!currentBatch) return;
+  const rows = currentBatch.leaderboard || [];
+  const md = ["## LLM-TruthLab 批量横评红黑榜", "| 排名 | 渠道 | 模型 | 结论 | 可信分 | 智商 |", "|---|---|---|---|---|---|"]
+    .concat(rows.map((r, i) => `| #${i+1} | ${r.label} | ${r.model} | ${r.authenticity_label} | ${r.trust_score} | ${r.iq_score ?? "-"} |`)).join("\n");
+  navigator.clipboard.writeText(md).then(() => toast("已复制批量红黑榜 Markdown"));
+}
+
+/* ============================================================
+   LOCAL TRANSPARENT PASSIVE AUDIT PROXY (v11 NEW)
+   ============================================================ */
+async function startProxy() {
+  const upstream_base_url = document.getElementById("pxUpstream").value.trim();
+  const port = parseInt(document.getElementById("pxPort").value || "8899", 10);
+  if (!upstream_base_url) { toast("请填写上游中转站 Base URL"); return; }
+  const r = await fetch(apiUrl("/api/proxy/start"), {
+    method: "POST", headers: apiHeaders(),
+    body: JSON.stringify({
+      upstream_base_url,
+      port,
+      proxy_url: document.getElementById("pxOutProxy").value.trim(),
+      verify_ssl: document.getElementById("pxVerifySsl").checked,
+    }),
+  });
+  const d = await r.json();
+  if (!r.ok) { toast(d.error || "代理启动失败"); return; }
+  renderProxyStatus(d);
+  toast(`透明代理已启动：${d.listen_url}`);
+  clearInterval(proxyPollTimer);
+  proxyPollTimer = setInterval(refreshProxyStatus, 2500);
+}
+async function stopProxy() {
+  const r = await fetch(apiUrl("/api/proxy/stop"), { method: "POST", headers: apiHeaders(), body: "{}" });
+  renderProxyStatus(await r.json());
+  clearInterval(proxyPollTimer);
+  toast("透明代理已停止");
+}
+async function clearProxyLogs() {
+  const r = await fetch(apiUrl("/api/proxy/clear"), { method: "POST", headers: apiHeaders(), body: "{}" });
+  renderProxyStatus(await r.json());
+  toast("已清空代理监控记录");
+}
+async function refreshProxyStatus() {
+  try {
+    const r = await fetch(apiUrl("/api/proxy/status"));
+    if (r.ok) renderProxyStatus(await r.json());
+  } catch {}
+}
+function copyProxyUrl() {
+  const u = document.getElementById("proxyListenUrl").textContent;
+  navigator.clipboard.writeText(u).then(() => toast("已复制本地透明代理地址：" + u));
+}
+function auditFromProxy(model) {
+  const up = document.getElementById("pxUpstream").value.trim();
+  if (up) document.getElementById("baseUrl").value = up;
+  if (model && model !== "unknown") document.getElementById("modelName").value = model;
+  switchView("viewAudit");
+  toast("已将目标站点与模型填入单站取证，填 Key 后即可深度排查");
+}
+function renderProxyStatus(st) {
+  const running = !!st.running;
+  document.getElementById("proxyLiveDot").classList.toggle("on", running);
+  const pill = document.getElementById("proxyStatePill");
+  pill.className = "pill " + (running ? "pill-PASS" : "pill-INFO");
+  pill.textContent = running ? `运行中 :${st.listen_port}` : "未启动";
+  document.getElementById("startProxyBtn").style.display = running ? "none" : "inline-flex";
+  document.getElementById("stopProxyBtn").style.display = running ? "inline-flex" : "none";
+  document.getElementById("proxyLiveBanner").style.display = running ? "flex" : "none";
+  if (running) {
+    document.getElementById("proxyListenUrl").textContent = `${st.listen_url}/v1`;
+    if (st.upstream_base_url && !document.getElementById("pxUpstream").value) document.getElementById("pxUpstream").value = st.upstream_base_url;
+  }
+
+  const tot = st.totals || {};
+  document.getElementById("pxKpiReqs").textContent = tot.requests || 0;
+  document.getElementById("pxKpiErrs").textContent = `${tot.errors || 0} 错误`;
+  document.getElementById("pxKpiCny").textContent = `¥${Number(tot.estimated_cny || 0).toFixed(4)}`;
+  document.getElementById("pxKpiUsd").textContent = `$${Number(tot.estimated_usd || 0).toFixed(4)}`;
+  const allTok = (tot.input_tokens || 0) + (tot.output_tokens || 0);
+  document.getElementById("pxKpiTok").textContent = allTok.toLocaleString();
+  document.getElementById("pxKpiTokSub").textContent = `In ${(tot.input_tokens||0).toLocaleString()} / Out ${(tot.output_tokens||0).toLocaleString()}`;
+  const alerts = st.alerts || [];
+  document.getElementById("pxKpiAlerts").textContent = alerts.length;
+  document.getElementById("pxKpiAlerts").style.color = alerts.length ? "var(--crimson)" : "var(--text)";
+
+  const aCard = document.getElementById("pxAlertCard");
+  if (alerts.length) {
+    aCard.style.display = "block";
+    document.getElementById("pxAlertList").innerHTML = alerts.slice().reverse().slice(0, 12).map(a => `<li>[${(a.timestamp||"").slice(11,19)}] ${esc(a.message)}</li>`).join("");
+  } else {
+    aCard.style.display = "none";
+  }
+
+  const recs = (st.records || []).slice().reverse();
+  const tb = document.getElementById("pxRecordsBody");
+  if (!recs.length) {
+    tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-3);padding:24px;">等待客户端请求流入本地透明代理...</td></tr>';
+    return;
+  }
+  tb.innerHTML = recs.slice(0, 50).map(r => `<tr>
+    <td class="mono">${(r.timestamp || "").slice(11, 19)}</td>
+    <td class="mono">${esc(r.path)}</td>
+    <td class="mono">${esc(r.requested_model)}${r.returned_model && r.returned_model !== r.requested_model ? ` → <span style="color:var(--amber)">${esc(r.returned_model)}</span>` : ""}</td>
+    <td><span class="pill pill-${r.ok ? 'PASS' : 'FAIL'}">${r.status_code}</span>${(r.alerts && r.alerts.length) ? ' <span class="pill pill-WARN">异常</span>' : ''}</td>
+    <td class="mono">${r.ttft_ms != null ? Math.round(r.ttft_ms) + "ms" : "-"} / ${Math.round(r.latency_ms || 0)}ms</td>
+    <td class="mono">${r.effective_tps || 0}</td>
+    <td class="mono">${r.input_tokens || 0}/${r.output_tokens || 0}</td>
+    <td>${esc(r.edge_pop || "—")}</td>
+    <td class="mono">¥${Number(r.estimated_cny || 0).toFixed(4)}</td>
+    <td><button class="btn btn-sm btn-ghost" onclick="auditFromProxy('${esc(r.requested_model)}')">深度查</button></td>
+  </tr>`).join("");
+}
+
+/* ============================================================
+   CANARY MONITOR + WEBHOOK
+   ============================================================ */
+async function startMonitor() {
+  const payload = {
+    base_url: document.getElementById("monUrl").value.trim(),
+    api_key: document.getElementById("monKey").value.trim(),
+    model: document.getElementById("monModel").value.trim(),
+    protocol: document.getElementById("monProto").value,
+    interval_sec: parseInt(document.getElementById("monInterval").value || "180", 10),
+    webhook_url: document.getElementById("monWebhook").value.trim(),
+  };
+  const r = await fetch(apiUrl("/api/monitor/start"), { method: "POST", headers: apiHeaders(), body: JSON.stringify(payload) });
+  const d = await r.json();
+  if (!r.ok) { toast(d.error || "启动失败"); return; }
+  renderMonitorStatus(d);
+  clearInterval(monPollTimer);
+  monPollTimer = setInterval(refreshMonitorStatus, 4000);
+  toast("金丝雀持续盯盘已启动");
+}
+async function stopMonitor() {
+  const r = await fetch(apiUrl("/api/monitor/stop"), { method: "POST", headers: apiHeaders(), body: "{}" });
+  renderMonitorStatus(await r.json());
+  clearInterval(monPollTimer);
+  toast("已停止金丝雀盯盘");
+}
+async function monitorTickNow() {
+  const payload = {
+    base_url: document.getElementById("monUrl").value.trim(),
+    api_key: document.getElementById("monKey").value.trim(),
+    model: document.getElementById("monModel").value.trim(),
+    protocol: document.getElementById("monProto").value,
+  };
+  toast("正在执行单次金丝雀抽检...");
+  const r = await fetch(apiUrl("/api/monitor/tick_now"), { method: "POST", headers: apiHeaders(), body: JSON.stringify(payload) });
+  const d = await r.json();
+  if (!r.ok) { toast(d.error || "抽检失败"); return; }
+  renderMonitorStatus(d.status);
+  toast("单次抽检完成");
+}
+async function testWebhook() {
+  const webhook_url = document.getElementById("monWebhook").value.trim();
+  if (!webhook_url) { toast("请先填入飞书/钉钉/企微/Discord Webhook URL"); return; }
+  const r = await fetch(apiUrl("/api/monitor/test_webhook"), { method: "POST", headers: apiHeaders(), body: JSON.stringify({ webhook_url }) });
+  const d = await r.json();
+  toast(d.ok ? `Webhook 推送测试成功 (${d.detail})` : `推送失败：${d.detail || d.error}`);
+}
+async function refreshMonitorStatus() {
+  try {
+    const r = await fetch(apiUrl("/api/monitor/status"));
+    if (r.ok) renderMonitorStatus(await r.json());
+  } catch {}
+}
+function renderMonitorStatus(st) {
+  const run = !!st.running;
+  document.getElementById("monLiveDot").classList.toggle("on", run);
+  const p = document.getElementById("monStatePill");
+  p.className = "pill " + (run ? "pill-PASS" : "pill-INFO");
+  p.textContent = run ? `盯盘中 (${st.interval_sec}s)` : "未运行";
+  document.getElementById("startMonBtn").style.display = run ? "none" : "inline-flex";
+  document.getElementById("stopMonBtn").style.display = run ? "inline-flex" : "none";
+  const anc = st.anchors || {};
+  document.getElementById("monAnchorInfo").textContent = anc.model
+    ? `基准锚点：模型 ${anc.model} | ID ${anc.id_prefix || "-"} | 延迟 ${anc.latency_ms || 0}ms${st.webhook_configured ? " | Webhook 已启用" : ""}`
+    : "基准锚点：首轮成功后自动锁定";
+
+  const alerts = st.alerts || [];
+  document.getElementById("monAlertsCard").style.display = alerts.length ? "block" : "none";
+  if (alerts.length) {
+    document.getElementById("monAlertsList").innerHTML = alerts.slice().reverse().map(a => `<li>[Tick #${a.tick}] ${esc(a.message)}</li>`).join("");
+  }
+  const ticks = (st.ticks || []).slice().reverse();
+  const tb = document.getElementById("monTicksBody");
+  if (!ticks.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-3);padding:24px;">暂无巡检记录</td></tr>'; return; }
+  tb.innerHTML = ticks.map(t => `<tr>
+    <td class="mono">#${t.index}</td>
+    <td class="mono">${(t.timestamp||"").slice(11,19)}</td>
+    <td><span class="pill pill-${t.ok ? (t.alerts&&t.alerts.length?'WARN':'PASS') : 'FAIL'}">${t.ok ? (t.alerts&&t.alerts.length?'异常':'正常') : '失败'}</span></td>
+    <td class="mono">${esc(t.returned_model || "-")}</td>
+    <td class="mono">${esc(t.id_prefix || "-")}</td>
+    <td class="mono">${t.latency_ms || 0}ms / ${t.ttft_ms != null ? Math.round(t.ttft_ms) + "ms" : "-"}</td>
+    <td class="mono">${t.tps || 0}</td>
+    <td class="mono">${t.jsd_vs_anchor != null ? Number(t.jsd_vs_anchor).toFixed(3) : "—"}</td>
+    <td><span class="pill pill-${t.iq_ok ? 'PASS' : 'WARN'}">${t.iq_ok ? '通过' : '未过'}</span></td>
+  </tr>`).join("");
+}
+
+/* ============================================================
+   HISTORY VAULT, DIFF, BASELINES & ZIP BACKUP/IMPORT
+   ============================================================ */
+async function loadHistory() {
+  const r = await fetch(apiUrl("/api/history"));
+  const d = await r.json();
+  const list = d.history || [];
+  const tb = document.getElementById("historyBody");
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:22px;">暂无历史档案</td></tr>'; return; }
+  tb.innerHTML = list.map(h => `<tr>
+    <td><input type="checkbox" class="hist-chk" value="${esc(h.audit_id)}" /></td>
+    <td class="mono">${(h.started_at || "").slice(0, 16).replace("T", " ")}</td>
+    <td class="mono">${esc(h.model)}</td>
+    <td class="mono" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(h.base_url)}</td>
+    <td><span class="pill pill-${h.authenticity_code==='VERIFIED_STRONG'?'PASS':h.authenticity_code==='LIKELY_FAKE_OR_WATERED'?'FAIL':'WARN'}">${esc(h.authenticity_label)}</span></td>
+    <td class="mono">${h.trust_score}</td>
+    <td class="mono">${h.iq_score != null ? h.iq_score : "—"}</td>
+    <td style="white-space:nowrap;">
+      <button class="btn btn-sm btn-ghost" onclick="openHistoryReport('${esc(h.audit_id)}')">查看</button>
+      <button class="btn btn-sm btn-ghost" onclick="deleteHistory('${esc(h.audit_id)}')">删</button>
+    </td>
+  </tr>`).join("");
+}
+async function openHistoryReport(aid) {
+  const r = await fetch(apiUrl(`/api/history/${encodeURIComponent(aid)}`));
+  const d = await r.json();
+  if (d.report) {
+    currentJobId = null; currentReport = d.report;
+    switchView("viewAudit"); renderAuditReport(currentReport);
+  }
+}
+async function deleteHistory(aid) {
+  await fetch(apiUrl(`/api/history/${encodeURIComponent(aid)}`), { method: "DELETE", headers: apiHeaders() });
+  loadHistory(); toast("已删除历史记录");
+}
+async function compareSelectedHistory() {
+  const checked = Array.from(document.querySelectorAll(".hist-chk:checked")).map(el => el.value);
+  if (checked.length !== 2) { toast("请恰好勾选 2 条历史记录进行时间轴纵比"); return; }
+  const r = await fetch(apiUrl("/api/history/compare"), {
+    method: "POST", headers: apiHeaders(), body: JSON.stringify({ old_id: checked[1], new_id: checked[0] }),
+  });
+  const d = await r.json();
+  if (!r.ok) { toast(d.error || "对比失败"); return; }
+  const df = d.diff;
+  const card = document.getElementById("historyDiffCard");
+  card.style.display = "block";
+  card.innerHTML = `<div class="card-head"><div class="card-title">历史纵比结论：${esc(df.drift_summary)}</div><button class="btn btn-sm btn-ghost" onclick="document.getElementById('historyDiffCard').style.display='none'">收起</button></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="k-lbl">可信分变化</div><div class="k-val">${df.trust_delta >= 0 ? "+" : ""}${df.trust_delta}</div></div>
+      <div class="kpi-card"><div class="k-lbl">智商变化</div><div class="k-val">${df.iq_delta != null ? (df.iq_delta >= 0 ? "+" : "") + df.iq_delta : "—"}</div></div>
+      <div class="kpi-card"><div class="k-lbl">行为分布 JSD 漂移</div><div class="k-val">${df.jsd_drift != null ? Number(df.jsd_drift).toFixed(4) : "—"}</div></div>
+      <div class="kpi-card"><div class="k-lbl">词表偏移 L1</div><div class="k-val">${df.tokenizer_l1 != null ? Number(df.tokenizer_l1).toFixed(4) : "—"}</div></div>
+    </div>`;
+}
+
+function exportBackupZip() {
+  window.open(apiUrl("/api/backup/export"), "_blank");
+  toast("正在下载全部本地基线与历史备份 ZIP...");
+}
+async function importBackupZip(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const r = await fetch(apiUrl("/api/backup/import"), {
+      method: "POST", headers: apiHeaders(), body: JSON.stringify({ zip_b64: reader.result }),
+    });
+    const d = await r.json();
+    input.value = "";
+    if (r.ok) {
+      toast(`导入成功！合并 ${d.imported_baselines} 个基线 + ${d.imported_history} 条历史`);
+      loadHistory(); loadBaselines();
+    } else toast(d.error || "导入失败");
+  };
+  reader.readAsDataURL(file);
+}
+
+async function loadBaselines() {
+  const r = await fetch(apiUrl("/api/baselines"));
+  const d = await r.json();
+  cachedBaselines = d.baselines || [];
+  const sel = document.getElementById("baselineSel");
+  sel.innerHTML = '<option value="">自动匹配全部本地基线</option>' + cachedBaselines.map(b => `<option value="${esc(b.id)}">${esc(b.name)} (${esc(b.model)})</option>`).join("");
+  const tb = document.getElementById("baselinesBody");
+  if (!cachedBaselines.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:20px;">暂无本地官方基线</td></tr>'; return; }
+  tb.innerHTML = cachedBaselines.map(b => `<tr>
+    <td><strong>${esc(b.name)}</strong></td>
+    <td class="mono">${esc(b.model)}</td>
+    <td class="mono">${b.total_samples || 0}</td>
+    <td>${esc(b.tokenizer_family || "-")}</td>
+    <td class="mono">${(b.created_at || "").slice(0, 16).replace("T", " ")}</td>
+    <td>
+      <button class="btn btn-sm btn-ghost" onclick="window.open(apiUrl('/api/baselines/${encodeURIComponent(b.id)}/export'), '_blank')">导出</button>
+      <button class="btn btn-sm btn-ghost" onclick="deleteBaseline('${esc(b.id)}')">删</button>
+    </td>
+  </tr>`).join("");
+}
+async function deleteBaseline(bid) {
+  await fetch(apiUrl(`/api/baselines/${encodeURIComponent(bid)}`), { method: "DELETE", headers: apiHeaders() });
+  loadBaselines(); toast("已删除基线");
+}
+async function importBaselineJson(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const txt = await file.text();
+  input.value = "";
+  const r = await fetch(apiUrl("/api/baselines/import"), { method: "POST", headers: apiHeaders(), body: txt });
+  if (r.ok) { loadBaselines(); toast("已导入官方基线 JSON"); } else toast("导入失败，请确认 JSON 格式");
+}
+
+/* Keyboard Shortcut: Ctrl+Enter launches active workspace */
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    if (activeView === "viewAudit") startAudit();
+    else if (activeView === "viewArena") startArena();
+    else if (activeView === "viewBatch") startBatch();
+  }
+});
+
+/* Desktop Heartbeat & Clean Shutdown Signal */
+setInterval(() => {
+  fetch(apiUrl("/api/heartbeat"), { method: "POST", headers: apiHeaders(), body: "{}" }).catch(() => {});
+}, 8000);
+window.addEventListener("beforeunload", () => {
+  navigator.sendBeacon(apiUrl("/api/window_closing"), "{}");
+});
+
+/* Init */
+loadBookmarks();
+loadBaselines();
+addBatchRow("渠道 A", "", "", "claude-opus-5-5");
+addBatchRow("渠道 B", "", "", "claude-opus-5-5");
+</script>
+</body>
+</html>
