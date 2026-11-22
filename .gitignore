@@ -1,0 +1,18 @@
+# Python & venv
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# PyInstaller build artifacts (binaries published via GitHub Releases)
+build/
+dist/
+*.spec
+
+# Local user runtime data (never commit personal history/baselines!)
+baselines/
+history/
+*.log
+.DS_Store
+Thumbs.db
